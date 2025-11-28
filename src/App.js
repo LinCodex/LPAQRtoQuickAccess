@@ -27,8 +27,14 @@ function App() {
   const [scannerReady, setScannerReady] = useState(false);
   const [scannerError, setScannerError] = useState('');
   const [scannerPaused, setScannerPaused] = useState(false);
+  const [shortLink, setShortLink] = useState('');
+  const [isShortening, setIsShortening] = useState(false);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
+
+  // Short.io configuration - Replace with your values
+  const SHORTIO_API_KEY = 'YOUR_SHORTIO_API_KEY'; // Get from https://app.short.io/settings/integrations/api-key
+  const SHORTIO_DOMAIN = 'your-domain.short.gy'; // Your Short.io domain
   const fileInputRef = useRef(null);
 
   // Parse LPA code and generate activation link
@@ -66,6 +72,39 @@ function App() {
   const getDirectAppleLink = (lpaData) => {
     const lpaString = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}${lpaData.confirmationCode ? '$' + lpaData.confirmationCode : ''}`;
     return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
+  };
+
+  // Shorten link using Short.io API
+  const shortenLink = async (longUrl) => {
+    setIsShortening(true);
+    try {
+      const response = await fetch('https://api.short.io/links/public', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'authorization': SHORTIO_API_KEY
+        },
+        body: JSON.stringify({
+          domain: SHORTIO_DOMAIN,
+          originalURL: longUrl,
+          allowDuplicates: false
+        })
+      });
+      const data = await response.json();
+      if (data.shortURL) {
+        setShortLink(data.shortURL);
+        return data.shortURL;
+      } else {
+        console.error('Short.io error:', data);
+        return null;
+      }
+    } catch (err) {
+      console.error('Failed to shorten link:', err);
+      return null;
+    } finally {
+      setIsShortening(false);
+    }
   };
 
   const handleConvert = async () => {
@@ -210,6 +249,7 @@ function App() {
     setLpaCode('');
     setGeneratedLink('');
     setQrCodeDataUrl('');
+    setShortLink('');
     setError('');
     setCopied(false);
     // Resume scanner
@@ -334,13 +374,35 @@ function App() {
               </h2>
 
               <div className="quick-copy">
-                <button 
-                  className={`copy-link-btn ${copied ? 'copied' : ''}`}
-                  onClick={copyToClipboard}
-                >
-                  {copied ? <Check size={18} /> : <Copy size={18} />}
-                  {copied ? 'Copied!' : 'Copy Link'}
-                </button>
+                {!shortLink ? (
+                  <button 
+                    className="shorten-btn"
+                    onClick={() => shortenLink(generatedLink)}
+                    disabled={isShortening}
+                  >
+                    {isShortening ? (
+                      <><RefreshCw size={18} className="spinning" /> 生成短链接...</>
+                    ) : (
+                      <><Link2 size={18} /> 生成短链接</>
+                    )}
+                  </button>
+                ) : (
+                  <div className="short-link-display">
+                    <span className="short-link-label">短链接:</span>
+                    <code className="short-link-url">{shortLink}</code>
+                    <button 
+                      className={`copy-link-btn ${copied ? 'copied' : ''}`}
+                      onClick={() => {
+                        navigator.clipboard.writeText(shortLink);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? <Check size={18} /> : <Copy size={18} />}
+                      {copied ? '已复制!' : '复制'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="link-actions">
