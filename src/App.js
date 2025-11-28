@@ -49,14 +49,21 @@ function App() {
 
   const generateLink = (lpaData) => {
     // Apple Universal Link for eSIM installation (iOS 17.4+)
-    // Format: https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=LPA:1$GSMA_SMDP_Address$activation_code
-    // Note: Universal Links should be all lower case per Apple docs, but carddata value is case-sensitive
     const lpaString = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}${lpaData.confirmationCode ? '$' + lpaData.confirmationCode : ''}`;
     
-    // Apple's eSIM setup Universal Link (works on iOS 17.4+)
+    // Direct Apple eSIM setup URL
     const appleLink = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
     
-    return appleLink;
+    // Create a redirect URL that forces Safari to open (bypasses WeChat browser)
+    // Using x-web-search scheme which opens Safari, then redirects to the actual link
+    const safariRedirectLink = `https://lincodex.github.io/LPAQRtoQuickAccess/redirect.html?url=${encodeURIComponent(appleLink)}`;
+    
+    return safariRedirectLink;
+  };
+
+  const getDirectAppleLink = (lpaData) => {
+    const lpaString = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}${lpaData.confirmationCode ? '$' + lpaData.confirmationCode : ''}`;
+    return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
   };
 
   const handleConvert = async () => {
@@ -101,13 +108,23 @@ function App() {
     setScannerError('');
 
     try {
-      html5QrCodeRef.current = new Html5Qrcode("qr-reader");
+      html5QrCodeRef.current = new Html5Qrcode("qr-reader", {
+        // Optimize for speed
+        verbose: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true // Use native BarcodeDetector API if available
+        }
+      });
       
       await html5QrCodeRef.current.start(
         { facingMode: "environment" },
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
+          fps: 30, // Increased FPS for faster scanning
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1.0,
+          disableFlip: false,
+          // Optimized scanning settings
+          formatsToSupport: [ 0 ] // QR_CODE only = faster
         },
         (decodedText) => {
           setLpaCode(decodedText);
@@ -116,7 +133,7 @@ function App() {
           if (parsed) {
             const link = generateLink(parsed);
             setGeneratedLink(link);
-            // Generate QR code
+            // Generate QR code for the redirect link
             QRCode.toDataURL(link, {
               width: 256,
               margin: 2,
