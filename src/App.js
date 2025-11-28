@@ -55,8 +55,9 @@ function App() {
     const appleLink = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
     
     // Create a redirect URL that forces Safari to open (bypasses WeChat browser)
-    // Using x-web-search scheme which opens Safari, then redirects to the actual link
-    const safariRedirectLink = `https://lincodex.github.io/LPAQRtoQuickAccess/redirect.html?url=${encodeURIComponent(appleLink)}`;
+    // Uses the deployed redirect page
+    const baseUrl = window.location.origin;
+    const safariRedirectLink = `${baseUrl}/redirect.html?url=${encodeURIComponent(appleLink)}`;
     
     return safariRedirectLink;
   };
