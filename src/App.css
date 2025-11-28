@@ -172,6 +172,23 @@
   white-space: nowrap;
 }
 
+.scanner-paused {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.9);
+  padding: 24px 32px;
+  border-radius: 16px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 /* Input Group */
 .input-group {
   margin-bottom: 20px;

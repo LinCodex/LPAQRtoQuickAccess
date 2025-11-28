@@ -26,6 +26,7 @@ function App() {
   const [error, setError] = useState('');
   const [scannerReady, setScannerReady] = useState(false);
   const [scannerError, setScannerError] = useState('');
+  const [scannerPaused, setScannerPaused] = useState(false);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
   const fileInputRef = useRef(null);
@@ -128,6 +129,11 @@ function App() {
           formatsToSupport: [ 0 ] // QR_CODE only = faster
         },
         (decodedText) => {
+          // Pause scanner after successful scan
+          if (html5QrCodeRef.current) {
+            html5QrCodeRef.current.pause(true);
+            setScannerPaused(true);
+          }
           setLpaCode(decodedText);
           // Auto-convert when QR is scanned
           const parsed = parseLpaCode(decodedText);
@@ -206,6 +212,11 @@ function App() {
     setQrCodeDataUrl('');
     setError('');
     setCopied(false);
+    // Resume scanner
+    if (html5QrCodeRef.current && scannerPaused) {
+      html5QrCodeRef.current.resume();
+      setScannerPaused(false);
+    }
   };
 
   useEffect(() => {
@@ -228,9 +239,9 @@ function App() {
         <header className="header">
           <div className="logo">
             <Smartphone className="logo-icon" />
-            <h1>LPA QR to Link</h1>
+            <h1>EZRefill</h1>
           </div>
-          <p className="subtitle">Convert eSIM QR codes to shareable activation links</p>
+          <p className="subtitle">eSIM 快速激活链接生成器</p>
         </header>
 
         <main className="main">
@@ -256,8 +267,14 @@ function App() {
                   <button onClick={initScanner} className="retry-btn">Retry</button>
                 </div>
               )}
-              {scannerReady && (
+              {scannerReady && !scannerPaused && (
                 <div className="scanner-hint">Point camera at LPA QR code</div>
+              )}
+              {scannerPaused && (
+                <div className="scanner-paused">
+                  <Check size={32} />
+                  <span>QR Code Scanned!</span>
+                </div>
               )}
             </div>
 
@@ -388,7 +405,7 @@ function App() {
         </main>
 
         <footer className="footer">
-          <p>This tool converts LPA QR codes to universal eSIM activation links</p>
+          <p>Powered by EZRefill eSIM</p>
         </footer>
       </div>
     </div>
