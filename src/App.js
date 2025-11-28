@@ -181,7 +181,7 @@ function App() {
           // Optimized scanning settings
           formatsToSupport: [ 0 ] // QR_CODE only = faster
         },
-        (decodedText) => {
+        async (decodedText) => {
           // Pause scanner after successful scan
           if (html5QrCodeRef.current) {
             html5QrCodeRef.current.pause(true);
@@ -199,6 +199,8 @@ function App() {
               margin: 2,
               color: { dark: '#1e293b', light: '#ffffff' }
             }).then(setQrCodeDataUrl).catch(console.error);
+            // Auto-shorten the link
+            shortenLink(link);
           }
         },
         () => {}
@@ -314,6 +316,9 @@ function App() {
     } catch (err) {
       console.error('QR generation error:', err);
     }
+
+    // Auto-shorten the link
+    shortenLink(link);
   };
 
   useEffect(() => {
@@ -470,14 +475,14 @@ function App() {
                     disabled={isShortening}
                   >
                     {isShortening ? (
-                      <><RefreshCw size={18} className="spinning" /> 生成短链接...</>
+                      <><RefreshCw size={18} className="spinning" /> Generating...</>
                     ) : (
-                      <><Link2 size={18} /> 生成短链接</>
+                      <><Link2 size={18} /> Shorten Link</>
                     )}
                   </button>
                 ) : (
                   <div className="short-link-display">
-                    <span className="short-link-label">短链接:</span>
+                    <span className="short-link-label">Short Link:</span>
                     <code className="short-link-url">{shortLink}</code>
                     <button 
                       className={`copy-link-btn ${copied ? 'copied' : ''}`}
@@ -488,7 +493,7 @@ function App() {
                       }}
                     >
                       {copied ? <Check size={18} /> : <Copy size={18} />}
-                      {copied ? '已复制!' : '复制'}
+                      {copied ? 'Copied!' : 'Copy'}
                     </button>
                   </div>
                 )}
@@ -496,20 +501,12 @@ function App() {
 
               <div className="link-actions">
                 <a 
-                  href={generatedLink} 
-                  className="install-btn"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Smartphone size={20} />
-                  Install eSIM Now
-                </a>
-                <a 
                   href={`weixin://`}
-                  className="wechat-btn"
+                  className="wechat-btn full-width"
                   onClick={(e) => {
-                    // Copy link first, then open WeChat
-                    navigator.clipboard.writeText(generatedLink).catch(() => {});
+                    // Copy short link if available, otherwise original link
+                    const linkToCopy = shortLink || generatedLink;
+                    navigator.clipboard.writeText(linkToCopy).catch(() => {});
                   }}
                 >
                   <MessageCircle size={20} />

@@ -527,6 +527,11 @@
   transform: translateY(0);
 }
 
+.wechat-btn.full-width {
+  flex: none;
+  width: 100%;
+}
+
 .link-display {
   display: flex;
   align-items: flex-start;
