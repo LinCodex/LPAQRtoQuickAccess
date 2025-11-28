@@ -20,6 +20,8 @@ import './App.css';
 
 function App() {
   const [lpaCode, setLpaCode] = useState('');
+  const [smdpAddress, setSmdpAddress] = useState('');
+  const [activationCode, setActivationCode] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
@@ -32,9 +34,9 @@ function App() {
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
 
-  // Short.io configuration - Replace with your values
-  const SHORTIO_API_KEY = 'sk_cKXYVGd8ZyaRmrEy'; // Get from https://app.short.io/settings/integrations/api-key
-  const SHORTIO_DOMAIN = 'ezrefill.short.gy'; // Your Short.io domain
+  // Short.io configuration
+  const SHORTIO_API_KEY = 'sk_vDzD3cciTgwFOR0D';
+  const SHORTIO_DOMAIN = 'ezrefill.short.gy';
   const fileInputRef = useRef(null);
 
   // Parse LPA code and generate activation link
@@ -74,16 +76,19 @@ function App() {
     return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
   };
 
-  // Shorten link using Short.io API
+  // Shorten link using Short.io API via CORS proxy
   const shortenLink = async (longUrl) => {
     setIsShortening(true);
+    setError('');
+    
     try {
-      const response = await fetch('https://api.short.io/links/public', {
+      // Use CORS proxy for browser requests with secret key
+      const response = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'authorization': SHORTIO_API_KEY
+          'Authorization': SHORTIO_API_KEY
         },
         body: JSON.stringify({
           domain: SHORTIO_DOMAIN,
@@ -91,16 +96,25 @@ function App() {
           allowDuplicates: false
         })
       });
+      
       const data = await response.json();
+      console.log('Short.io response:', data);
+      
       if (data.shortURL) {
         setShortLink(data.shortURL);
         return data.shortURL;
-      } else {
+      } else if (data.error) {
+        setError(`Short.io: ${data.error}`);
         console.error('Short.io error:', data);
+        return null;
+      } else {
+        setError('Failed to create short link');
+        console.error('Short.io unexpected response:', data);
         return null;
       }
     } catch (err) {
       console.error('Failed to shorten link:', err);
+      setError(`Network error: ${err.message}`);
       return null;
     } finally {
       setIsShortening(false);
@@ -247,6 +261,8 @@ function App() {
 
   const reset = () => {
     setLpaCode('');
+    setSmdpAddress('');
+    setActivationCode('');
     setGeneratedLink('');
     setQrCodeDataUrl('');
     setShortLink('');
@@ -256,6 +272,47 @@ function App() {
     if (html5QrCodeRef.current && scannerPaused) {
       html5QrCodeRef.current.resume();
       setScannerPaused(false);
+    }
+  };
+
+  // Generate link from manual SM-DP+ and Activation Code input
+  const handleManualGenerate = async () => {
+    setError('');
+    setGeneratedLink('');
+    setQrCodeDataUrl('');
+    setShortLink('');
+
+    if (!smdpAddress.trim() || !activationCode.trim()) {
+      setError('Please enter both SM-DP+ Address and Activation Code');
+      return;
+    }
+
+    const lpaData = {
+      smdpAddress: smdpAddress.trim(),
+      activationCode: activationCode.trim(),
+      confirmationCode: ''
+    };
+
+    const link = generateLink(lpaData);
+    setGeneratedLink(link);
+    setLpaCode(`LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}`);
+
+    // Pause scanner if running
+    if (html5QrCodeRef.current && scannerReady && !scannerPaused) {
+      html5QrCodeRef.current.pause(true);
+      setScannerPaused(true);
+    }
+
+    // Generate QR code
+    try {
+      const qrDataUrl = await QRCode.toDataURL(link, {
+        width: 256,
+        margin: 2,
+        color: { dark: '#1e293b', light: '#ffffff' }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (err) {
+      console.error('QR generation error:', err);
     }
   };
 
@@ -334,14 +391,46 @@ function App() {
 
             <div id="file-reader" style={{ display: 'none' }}></div>
 
+            {/* Manual Input Section */}
+            <div className="manual-input-section">
+              <h3>Manual Entry</h3>
+              <div className="input-group">
+                <label htmlFor="smdp-input">SM-DP+ Address</label>
+                <input
+                  type="text"
+                  id="smdp-input"
+                  value={smdpAddress}
+                  onChange={(e) => setSmdpAddress(e.target.value)}
+                  placeholder="e.g. t-mobile.idemia.io"
+                />
+              </div>
+              <div className="input-group">
+                <label htmlFor="activation-input">Activation Code</label>
+                <input
+                  type="text"
+                  id="activation-input"
+                  value={activationCode}
+                  onChange={(e) => setActivationCode(e.target.value)}
+                  placeholder="e.g. G0LFC-8Z7IK-HYBGV-6CLG1"
+                />
+              </div>
+              <button className="primary-btn" onClick={handleManualGenerate}>
+                <Link2 size={18} />
+                Generate Link
+              </button>
+            </div>
+
+            <div className="divider"><span>or scan QR code</span></div>
+
             <div className="input-group">
-              <label htmlFor="lpa-input">LPA Code</label>
+              <label htmlFor="lpa-input">LPA Code (from QR)</label>
               <textarea
                 id="lpa-input"
                 value={lpaCode}
                 onChange={(e) => setLpaCode(e.target.value)}
                 placeholder="LPA:1$smdp.example.com$ACTIVATION-CODE-HERE"
-                rows={3}
+                rows={2}
+                readOnly
               />
             </div>
 
