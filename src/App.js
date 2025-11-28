@@ -33,8 +33,8 @@ function App() {
   const scannerInitialized = useRef(false);
 
   // Short.io configuration - Replace with your values
-  const SHORTIO_API_KEY = 'YOUR_SHORTIO_API_KEY'; // Get from https://app.short.io/settings/integrations/api-key
-  const SHORTIO_DOMAIN = 'your-domain.short.gy'; // Your Short.io domain
+  const SHORTIO_API_KEY = 'sk_cKXYVGd8ZyaRmrEy'; // Get from https://app.short.io/settings/integrations/api-key
+  const SHORTIO_DOMAIN = 'ezrefill.short.gy'; // Your Short.io domain
   const fileInputRef = useRef(null);
 
   // Parse LPA code and generate activation link
