@@ -143,9 +143,9 @@
             </div>
 
             <!-- Active State Button -->
-            <a id="activateBtn" href="#" class="hidden active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
+            <button id="activateBtn" onclick="showInstructions()" class="hidden active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10">
                 <span id="btnText">Activate Now</span>
-            </a>
+            </button>
 
             <!-- Standby State Button -->
             <button id="standbyBtn" class="hidden w-full bg-gray-300 text-gray-500 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-not-allowed">
@@ -231,6 +231,34 @@
         </div>
     </div>
 
+    <!-- Instructions Overlay -->
+    <div id="instructionsOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
+        <div id="instrDimmer" onclick="closeInstructions()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
+        <div id="instrSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
+            <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
+            <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-blue-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                    <i class="ph-bold ph-info text-3xl text-blue-600"></i>
+                </div>
+                <h2 id="instr-title" class="text-xl font-bold text-gray-900 mb-4">Quick Instructions</h2>
+                <div class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
+                    <ol class="text-sm text-blue-700 space-y-3 list-decimal list-inside leading-relaxed">
+                        <li id="instr-step-1">Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong></li>
+                        <li id="instr-step-2">Wait approximately <strong>1 minute</strong> for activation to complete</li>
+                    </ol>
+                    <p class="text-sm text-amber-700 mt-4 flex items-center gap-2 font-semibold">
+                        <i class="ph-bold ph-wifi-high"></i>
+                        <span id="instr-wifi">Important: Stay connected to Wi-Fi during activation</span>
+                    </p>
+                </div>
+                <a id="proceedBtn" href="#" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg flex items-center justify-center shadow-lg active-scale no-underline gap-2">
+                    <i class="ph-bold ph-arrow-right"></i>
+                    <span id="proceed-text">Proceed to Activate</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Product Overlay (same as redirect.html) -->
     <div id="productOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
         <div id="dimmer" onclick="closeSheet()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
@@ -282,7 +310,12 @@
                 'txt-p4-title': 'Contact Us',
                 'txt-p4-sub': 'Visit Store',
                 'errorText': 'Activation not found.',
-                'standbyInfo': 'Your eSIM is being prepared. You\'ll be able to activate once it\'s ready.'
+                'standbyInfo': 'Your eSIM is being prepared. You\'ll be able to activate once it\'s ready.',
+                'instr-title': 'Quick Instructions',
+                'instr-step-1': 'Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong>',
+                'instr-step-2': 'Wait approximately <strong>1 minute</strong> for activation to complete',
+                'instr-wifi': 'Important: Stay connected to Wi-Fi during activation',
+                'proceed-text': 'Proceed to Activate'
             },
             'zh': {
                 'txt-brand-sub': 'EzRefill',
@@ -309,7 +342,12 @@
                 'txt-p4-title': '联系我们',
                 'txt-p4-sub': '门店地址',
                 'errorText': '未找到激活记录',
-                'standbyInfo': '您的 eSIM 正在准备中，准备好后即可激活。'
+                'standbyInfo': '您的 eSIM 正在准备中，准备好后即可激活。',
+                'instr-title': '操作指南',
+                'instr-step-1': '跳转到 iPhone SIM 激活页面后，点击 <strong>激活</strong>',
+                'instr-step-2': '等待约 <strong>1 分钟</strong> 完成激活',
+                'instr-wifi': '重要提示：激活期间请保持 Wi-Fi 连接',
+                'proceed-text': '继续激活'
             }
         };
 
@@ -451,6 +489,35 @@
             currentLang = currentLang === 'en' ? 'zh' : 'en';
             applyLanguage(currentLang);
             if (activationData) renderActivation();
+        }
+
+        // Instructions overlay functions
+        function showInstructions() {
+            if (!activationData || !activationData.activationUrl) return;
+            
+            // Update instruction text based on language
+            const texts = uiText[currentLang];
+            document.getElementById('instr-title').textContent = texts['instr-title'];
+            document.getElementById('instr-step-1').innerHTML = texts['instr-step-1'];
+            document.getElementById('instr-step-2').innerHTML = texts['instr-step-2'];
+            document.getElementById('instr-wifi').textContent = texts['instr-wifi'];
+            document.getElementById('proceed-text').textContent = texts['proceed-text'];
+            
+            // Set the proceed button href
+            document.getElementById('proceedBtn').href = activationData.activationUrl;
+            
+            // Show overlay
+            document.getElementById('instructionsOverlay').classList.remove('pointer-events-none');
+            document.getElementById('instrDimmer').classList.remove('bg-black/0');
+            document.getElementById('instrDimmer').classList.add('bg-black/20', 'backdrop-blur-sm');
+            document.getElementById('instrSheet').classList.remove('translate-y-full');
+        }
+
+        function closeInstructions() {
+            document.getElementById('instrSheet').classList.add('translate-y-full');
+            document.getElementById('instrDimmer').classList.remove('bg-black/20', 'backdrop-blur-sm');
+            document.getElementById('instrDimmer').classList.add('bg-black/0');
+            setTimeout(() => document.getElementById('instructionsOverlay').classList.add('pointer-events-none'), 300);
         }
 
         // Product sheet functions (same as redirect.html)

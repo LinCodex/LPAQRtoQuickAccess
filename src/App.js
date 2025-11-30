@@ -120,7 +120,8 @@ function App() {
   };
 
   const copyStandbyLink = () => {
-    navigator.clipboard.writeText(standbyLink);
+    // Prefer short link if available
+    navigator.clipboard.writeText(standbyShortLink || standbyLink);
   };
 
   // Parse LPA code and generate activation link
