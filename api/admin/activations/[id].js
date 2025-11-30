@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
 
   // PUT - Update activation
   if (req.method === 'PUT') {
-    const { phoneNumber, notes, status, lpaCode } = req.body || {};
+    const { phoneNumber, notes, status, lpaCode, shortUrl } = req.body || {};
 
     try {
       redis = await getRedisClient();
@@ -62,6 +62,7 @@ module.exports = async function handler(req, res) {
         phoneNumber: phoneNumber !== undefined ? phoneNumber : activation.phoneNumber,
         notes: notes !== undefined ? notes : activation.notes,
         lpaCode: lpaCode !== undefined ? lpaCode : activation.lpaCode,
+        shortUrl: shortUrl !== undefined ? shortUrl : activation.shortUrl,
         updatedAt: new Date().toISOString(),
         updatedBy: user.username
       };

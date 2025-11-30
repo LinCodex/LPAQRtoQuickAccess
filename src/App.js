@@ -491,6 +491,25 @@ function App() {
                 readOnly
               />
             </div>
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+            <div className="button-group">
+              <button className="primary-btn" onClick={handleConvert}>
+                <Link2 size={18} />
+                Generate Link
+              </button>
+              {(lpaCode || generatedLink) && (
+                <button className="secondary-btn" onClick={reset}>
+                  <RefreshCw size={18} />
+                  Reset
+                </button>
+              )}
+            </div>
           </section>
 
           {/* Standby URL Section */}
@@ -543,28 +562,6 @@ function App() {
                 <p className="standby-hint">Send this link to customer. Activate it later in the Admin Panel.</p>
               </div>
             )}
-          </section>
-
-          {/* LPA Code Processing Section */}
-          <section className="card">
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
-
-            <div className="button-group">
-              <button className="primary-btn" onClick={handleConvert}>
-                <Link2 size={18} />
-                Generate Link
-              </button>
-              {(lpaCode || generatedLink) && (
-                <button className="secondary-btn" onClick={reset}>
-                  <RefreshCw size={18} />
-                  Reset
-                </button>
-              )}
-            </div>
           </section>
 
           {/* Output Section */}
