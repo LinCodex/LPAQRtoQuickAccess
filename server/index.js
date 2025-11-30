@@ -202,7 +202,7 @@ app.get('/api/admin/activations', authenticateToken, (req, res) => {
 // Update activation
 app.put('/api/admin/activations/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
-  const { phoneNumber, notes, status, lpaCode } = req.body;
+  const { phoneNumber, notes, status, lpaCode, shortUrl } = req.body;
   const activations = readActivations();
   const index = activations.findIndex(a => a.id === id);
 
@@ -214,6 +214,7 @@ app.put('/api/admin/activations/:id', authenticateToken, (req, res) => {
   if (phoneNumber !== undefined) activations[index].phoneNumber = phoneNumber;
   if (notes !== undefined) activations[index].notes = notes;
   if (lpaCode !== undefined) activations[index].lpaCode = lpaCode;
+  if (shortUrl !== undefined) activations[index].shortUrl = shortUrl;
   
   // Auto-set status based on LPA code
   if (lpaCode && lpaCode.trim()) {

@@ -80,13 +80,14 @@ function App() {
       const longUrl = `${baseUrl}/activate?id=${data.id}`;
       setStandbyLink(longUrl);
 
-      // Create short URL with last 4 digits of phone + date as path
+      // Create short URL with last 4 digits of phone + date + random suffix as path
       const phoneDigits = standbyPhone.replace(/\D/g, '');
       const last4 = phoneDigits.slice(-4);
       const today = new Date();
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
-      const customPath = last4 ? `${last4}-${month}${day}` : undefined;
+      const randomSuffix = Math.random().toString(36).substring(2, 5); // 3 char random suffix
+      const customPath = last4 ? `${last4}-${month}${day}-${randomSuffix}` : undefined;
 
       try {
         const shortResponse = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
@@ -99,14 +100,31 @@ function App() {
           body: JSON.stringify({
             domain: SHORTIO_DOMAIN,
             originalURL: longUrl,
-            path: customPath,
-            allowDuplicates: false
+            path: customPath
           })
         });
 
         const shortData = await shortResponse.json();
         if (shortData.shortURL) {
           setStandbyShortLink(shortData.shortURL);
+        } else if (shortResponse.status === 409) {
+          // Conflict - try without custom path
+          const retryResponse = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': SHORTIO_API_KEY
+            },
+            body: JSON.stringify({
+              domain: SHORTIO_DOMAIN,
+              originalURL: longUrl
+            })
+          });
+          const retryData = await retryResponse.json();
+          if (retryData.shortURL) {
+            setStandbyShortLink(retryData.shortURL);
+          }
         }
       } catch (shortErr) {
         console.error('Failed to create short link for standby:', shortErr);
