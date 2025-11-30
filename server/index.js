@@ -215,19 +215,7 @@ app.put('/api/admin/activations/:id', authenticateToken, (req, res) => {
   if (notes !== undefined) activations[index].notes = notes;
   if (lpaCode !== undefined) activations[index].lpaCode = lpaCode;
   if (shortUrl !== undefined) activations[index].shortUrl = shortUrl;
-  
-  // Auto-set status based on LPA code
-  if (lpaCode && lpaCode.trim()) {
-    activations[index].status = 'active';
-  } else if (status) {
-    activations[index].status = status;
-  }
-
-  // If explicitly setting to standby, clear LPA code
-  if (status === 'standby') {
-    activations[index].lpaCode = null;
-    activations[index].status = 'standby';
-  }
+  if (status !== undefined) activations[index].status = status;
 
   activations[index].updatedAt = new Date().toISOString();
   activations[index].updatedBy = req.user.username;

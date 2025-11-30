@@ -67,17 +67,9 @@ module.exports = async function handler(req, res) {
         updatedBy: user.username
       };
 
-      // Auto-set status based on LPA code
-      if (lpaCode && lpaCode.trim()) {
-        updatedActivation.status = 'active';
-      } else if (status) {
+      // Update status if provided
+      if (status !== undefined) {
         updatedActivation.status = status;
-      }
-
-      // If explicitly setting to standby, clear LPA code
-      if (status === 'standby') {
-        updatedActivation.lpaCode = '';
-        updatedActivation.status = 'standby';
       }
 
       await redis.set(`activation:${id}`, JSON.stringify(updatedActivation));

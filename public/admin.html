@@ -556,7 +556,7 @@
             document.getElementById('lpaInput').value = activation.lpaCode || '';
             document.getElementById('statusSection').classList.remove('hidden');
             document.getElementById('linkPreview').classList.remove('hidden');
-            document.getElementById('linkDisplay').value = getActivationLink(id);
+            document.getElementById('linkDisplay').value = activation.shortUrl || getActivationLink(id);
             
             formStatus = activation.status;
             updateStatusButtons();
