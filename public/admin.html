@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EzRefill Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', -apple-system, sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        .status-standby { background: #fef3c7; color: #92400e; }
+        .status-processing { background: #dbeafe; color: #1e40af; }
+        .status-active { background: #d1fae5; color: #065f46; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-sim-card text-3xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">EzRefill Admin</h1>
+                <p class="text-gray-500 text-sm mt-1">Sign in to manage activations</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div id="loginError" class="hidden text-red-600 text-sm text-center"></div>
+                <button type="submit" class="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                    <span>Sign In</span>
+                    <i class="ph-bold ph-sign-in"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                        <i class="ph-fill ph-sim-card text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-900">EzRefill Admin</h1>
+                        <p class="text-xs text-gray-500">Activation Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="userDisplay" class="text-sm text-gray-600"></span>
+                    <button onclick="logout()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
+                        <i class="ph-bold ph-sign-out mr-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-6xl mx-auto px-4 py-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-list-numbers text-xl text-gray-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-gray-900" id="statTotal">0</p>
+                            <p class="text-xs text-gray-500">Total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-hourglass-medium text-xl text-yellow-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-yellow-600" id="statStandby">0</p>
+                            <p class="text-xs text-gray-500">Standby</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-circle-notch text-xl text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-600" id="statProcessing">0</p>
+                            <p class="text-xs text-gray-500">Processing</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-check-circle text-xl text-green-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-green-600" id="statActive">0</p>
+                            <p class="text-xs text-gray-500">Active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-900">Activations</h2>
+                <button onclick="showCreateModal()" class="bg-black text-white px-4 py-2 rounded-xl font-medium text-sm hover:bg-gray-800 transition flex items-center gap-2">
+                    <i class="ph-bold ph-plus"></i>
+                    New Activation
+                </button>
+            </div>
+
+            <!-- Activations List -->
+            <div class="glass-panel rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID / Link</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Phone</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">LPA Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activationsList" class="divide-y divide-gray-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <i class="ph-duotone ph-sim-card text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 font-medium">No activations yet</p>
+                    <p class="text-gray-400 text-sm">Create your first activation to get started</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="modalTitle" class="text-xl font-bold text-gray-900">New Activation</h2>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="ph-bold ph-x text-gray-500"></i>
+                </button>
+            </div>
+            <form id="activationForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="text" id="phoneInput" placeholder="e.g. 718-555-1234" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                    <p class="text-xs text-gray-400 mt-1">Customer's phone number for tracking</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="notesInput" rows="2" placeholder="Optional notes..." class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition resize-none"></textarea>
+                </div>
+
+                <div id="lpaSection">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">LPA Code</label>
+                    <textarea id="lpaInput" rows="3" placeholder="LPA:1$smdp.example.com$ACTIVATION-CODE" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm resize-none"></textarea>
+                    <p class="text-xs text-gray-400 mt-1">Adding LPA code will set status to Active. Leave empty for Standby.</p>
+                </div>
+
+                <div id="statusSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setFormStatus('standby')" id="btnStandby" class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Standby</button>
+                        <button type="button" onclick="setFormStatus('processing')" id="btnProcessing" class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Processing</button>
+                        <button type="button" onclick="setFormStatus('active')" id="btnActive" class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Active</button>
+                    </div>
+                </div>
+
+                <div id="linkPreview" class="hidden bg-gray-50 rounded-xl p-4">
+                    <label class="block text-xs font-medium text-gray-500 mb-2">Customer Link</label>
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="linkDisplay" readonly class="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
+                        <button type="button" onclick="copyLink()" class="px-3 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                            <i class="ph-bold ph-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal()" class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                        <span id="submitBtnText">Create</span>
+                        <i class="ph-bold ph-check"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph-fill ph-trash text-3xl text-red-600"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Delete Activation?</h2>
+            <p class="text-gray-500 text-sm mb-6">This action cannot be undone. The customer link will stop working.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                <button onclick="confirmDelete()" class="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3001/api' 
+            : '/api';
+
+        let token = localStorage.getItem('ezrefill_token');
+        let activations = [];
+        let deleteId = null;
+        let formStatus = 'standby';
+
+        // Check auth on load
+        async function checkAuth() {
+            if (!token) {
+                showLogin();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showDashboard(data.username);
+                } else {
+                    localStorage.removeItem('ezrefill_token');
+                    showLogin();
+                }
+            } catch (e) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        function showDashboard(username) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('userDisplay').textContent = username;
+            loadActivations();
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('loginError');
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    token = data.token;
+                    localStorage.setItem('ezrefill_token', token);
+                    showDashboard(data.username);
+                } else {
+                    errorEl.textContent = 'Invalid username or password';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('ezrefill_token');
+            token = null;
+            showLogin();
+        }
+
+        // Load activations
+        async function loadActivations() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    activations = await res.json();
+                    renderActivations();
+                    updateStats();
+                }
+            } catch (e) {
+                console.error('Error loading activations:', e);
+            }
+        }
+
+        function renderActivations() {
+            const list = document.getElementById('activationsList');
+            const empty = document.getElementById('emptyState');
+
+            if (activations.length === 0) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            list.innerHTML = activations.map(a => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3">
+                        <div class="font-mono text-sm font-medium text-gray-900">${a.id}</div>
+                        <button onclick="copyActivationLink('${a.id}')" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1">
+                            <i class="ph-bold ph-copy"></i> Copy Link
+                        </button>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-sm text-gray-600">${a.phoneNumber || '-'}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold status-${a.status}">
+                            ${a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs font-mono text-gray-500 truncate block max-w-[200px]" title="${a.lpaCode || ''}">
+                            ${a.lpaCode ? (a.lpaCode.substring(0, 30) + '...') : '-'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-sm text-gray-500">${formatDate(a.createdAt)}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editActivation('${a.id}')" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Edit">
+                            <i class="ph-bold ph-pencil text-gray-500"></i>
+                        </button>
+                        <button onclick="showDeleteModal('${a.id}')" class="p-2 hover:bg-red-50 rounded-lg transition" title="Delete">
+                            <i class="ph-bold ph-trash text-red-500"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = activations.length;
+            document.getElementById('statStandby').textContent = activations.filter(a => a.status === 'standby').length;
+            document.getElementById('statProcessing').textContent = activations.filter(a => a.status === 'processing').length;
+            document.getElementById('statActive').textContent = activations.filter(a => a.status === 'active').length;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Modal functions
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = 'New Activation';
+            document.getElementById('submitBtnText').textContent = 'Create';
+            document.getElementById('editId').value = '';
+            document.getElementById('phoneInput').value = '';
+            document.getElementById('notesInput').value = '';
+            document.getElementById('lpaInput').value = '';
+            document.getElementById('statusSection').classList.add('hidden');
+            document.getElementById('linkPreview').classList.add('hidden');
+            formStatus = 'standby';
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function editActivation(id) {
+            const activation = activations.find(a => a.id === id);
+            if (!activation) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Activation';
+            document.getElementById('submitBtnText').textContent = 'Save';
+            document.getElementById('editId').value = id;
+            document.getElementById('phoneInput').value = activation.phoneNumber || '';
+            document.getElementById('notesInput').value = activation.notes || '';
+            document.getElementById('lpaInput').value = activation.lpaCode || '';
+            document.getElementById('statusSection').classList.remove('hidden');
+            document.getElementById('linkPreview').classList.remove('hidden');
+            document.getElementById('linkDisplay').value = getActivationLink(id);
+            
+            formStatus = activation.status;
+            updateStatusButtons();
+            
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function setFormStatus(status) {
+            formStatus = status;
+            updateStatusButtons();
+        }
+
+        function updateStatusButtons() {
+            ['standby', 'processing', 'active'].forEach(s => {
+                const btn = document.getElementById('btn' + s.charAt(0).toUpperCase() + s.slice(1));
+                if (s === formStatus) {
+                    btn.classList.add('bg-black', 'text-white', 'border-black');
+                    btn.classList.remove('border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-black', 'text-white', 'border-black');
+                    btn.classList.add('border-gray-200', 'text-gray-600');
+                }
+            });
+        }
+
+        function getActivationLink(id) {
+            const baseUrl = window.location.origin;
+            return `${baseUrl}/activate.html?id=${id}`;
+        }
+
+        function copyActivationLink(id) {
+            navigator.clipboard.writeText(getActivationLink(id));
+            // Could add a toast notification here
+        }
+
+        function copyLink() {
+            const link = document.getElementById('linkDisplay').value;
+            navigator.clipboard.writeText(link);
+        }
+
+        // Form submission
+        document.getElementById('activationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const editId = document.getElementById('editId').value;
+            const phoneNumber = document.getElementById('phoneInput').value;
+            const notes = document.getElementById('notesInput').value;
+            const lpaCode = document.getElementById('lpaInput').value;
+
+            const body = { phoneNumber, notes, lpaCode };
+            if (editId) body.status = formStatus;
+
+            try {
+                const url = editId 
+                    ? `${API_BASE}/admin/activations/${editId}`
+                    : `${API_BASE}/admin/activations`;
+                
+                const res = await fetch(url, {
+                    method: editId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    closeModal();
+                    loadActivations();
+                }
+            } catch (e) {
+                console.error('Error saving activation:', e);
+            }
+        });
+
+        // Delete functions
+        function showDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        async function confirmDelete() {
+            if (!deleteId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations/${deleteId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    closeDeleteModal();
+                    loadActivations();
+                }
+            } catch (e) {
+                console.error('Error deleting activation:', e);
+            }
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+</html>
