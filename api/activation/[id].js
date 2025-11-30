@@ -1,8 +1,13 @@
 // Vercel Serverless Function - Get activation status (public)
-import { kv } from '@vercel/kv';
+const { createClient } = require('redis');
 
-export default async function handler(req, res) {
-  // Enable CORS
+async function getRedisClient() {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -17,13 +22,18 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query;
+  let redis;
 
   try {
-    const activation = await kv.hgetall(`activation:${id}`);
+    redis = await getRedisClient();
+    const activationData = await redis.get(`activation:${id}`);
+    await redis.disconnect();
     
-    if (!activation || Object.keys(activation).length === 0) {
+    if (!activationData) {
       return res.status(404).json({ error: 'Activation not found' });
     }
+
+    const activation = JSON.parse(activationData);
 
     // Mask phone number for public display
     const maskedPhone = activation.phoneNumber 
@@ -47,6 +57,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error fetching activation:', error);
+    if (redis) await redis.disconnect().catch(() => {});
     return res.status(500).json({ error: 'Internal server error' });
   }
-}
+};

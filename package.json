@@ -4,7 +4,6 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@vercel/kv": "^1.0.1",
     "bcryptjs": "^2.4.3",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.2",
@@ -13,6 +12,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
+    "redis": "^4.6.12",
     "uuid": "^9.0.1"
   },
   "scripts": {

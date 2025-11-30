@@ -1,9 +1,15 @@
 // Vercel Serverless Function - List/Create activations
-import { kv } from '@vercel/kv';
-import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+const { createClient } = require('redis');
+const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
+
+async function getRedisClient() {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
 
 function verifyToken(req) {
   const authHeader = req.headers['authorization'];
@@ -13,12 +19,12 @@ function verifyToken(req) {
   
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch {
+  } catch (e) {
     return null;
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -28,6 +34,8 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  let redis;
+
   // GET - List all activations (requires auth)
   if (req.method === 'GET') {
     const user = verifyToken(req);
@@ -36,26 +44,35 @@ export default async function handler(req, res) {
     }
 
     try {
+      redis = await getRedisClient();
+      
       // Get all activation IDs
-      const activationIds = await kv.smembers('activations');
+      const activationIds = await redis.sMembers('activations');
       
       if (!activationIds || activationIds.length === 0) {
+        await redis.disconnect();
         return res.status(200).json([]);
       }
 
       // Fetch all activations
       const activations = await Promise.all(
-        activationIds.map(id => kv.hgetall(`activation:${id}`))
+        activationIds.map(async (id) => {
+          const data = await redis.get(`activation:${id}`);
+          return data ? JSON.parse(data) : null;
+        })
       );
+
+      await redis.disconnect();
 
       // Filter out nulls and sort by createdAt descending
       const validActivations = activations
-        .filter(a => a && Object.keys(a).length > 0)
+        .filter(a => a)
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       return res.status(200).json(validActivations);
     } catch (error) {
       console.error('Error listing activations:', error);
+      if (redis) await redis.disconnect().catch(() => {});
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -63,7 +80,7 @@ export default async function handler(req, res) {
   // POST - Create new activation (public for standby, auth for active)
   if (req.method === 'POST') {
     const user = verifyToken(req);
-    const { phoneNumber, notes, lpaCode } = req.body;
+    const { phoneNumber, notes, lpaCode } = req.body || {};
 
     // If LPA code is provided, require auth
     if (lpaCode && !user) {
@@ -71,6 +88,8 @@ export default async function handler(req, res) {
     }
 
     try {
+      redis = await getRedisClient();
+      
       const id = uuidv4().split('-')[0];
       const activation = {
         id,
@@ -84,16 +103,18 @@ export default async function handler(req, res) {
       };
 
       // Save activation
-      await kv.hset(`activation:${id}`, activation);
+      await redis.set(`activation:${id}`, JSON.stringify(activation));
       // Add to activations set
-      await kv.sadd('activations', id);
+      await redis.sAdd('activations', id);
 
+      await redis.disconnect();
       return res.status(201).json(activation);
     } catch (error) {
       console.error('Error creating activation:', error);
+      if (redis) await redis.disconnect().catch(() => {});
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-}
+};

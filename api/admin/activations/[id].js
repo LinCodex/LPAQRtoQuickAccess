@@ -1,8 +1,14 @@
 // Vercel Serverless Function - Update/Delete activation
-import { kv } from '@vercel/kv';
-import jwt from 'jsonwebtoken';
+const { createClient } = require('redis');
+const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
+
+async function getRedisClient() {
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
 
 function verifyToken(req) {
   const authHeader = req.headers['authorization'];
@@ -12,12 +18,12 @@ function verifyToken(req) {
   
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch {
+  } catch (e) {
     return null;
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'PUT,DELETE,OPTIONS');
@@ -33,17 +39,22 @@ export default async function handler(req, res) {
   }
 
   const { id } = req.query;
+  let redis;
 
   // PUT - Update activation
   if (req.method === 'PUT') {
-    const { phoneNumber, notes, status, lpaCode } = req.body;
+    const { phoneNumber, notes, status, lpaCode } = req.body || {};
 
     try {
-      const activation = await kv.hgetall(`activation:${id}`);
+      redis = await getRedisClient();
+      const activationData = await redis.get(`activation:${id}`);
       
-      if (!activation || Object.keys(activation).length === 0) {
+      if (!activationData) {
+        await redis.disconnect();
         return res.status(404).json({ error: 'Activation not found' });
       }
+
+      const activation = JSON.parse(activationData);
 
       // Update fields
       const updatedActivation = {
@@ -68,11 +79,13 @@ export default async function handler(req, res) {
         updatedActivation.status = 'standby';
       }
 
-      await kv.hset(`activation:${id}`, updatedActivation);
+      await redis.set(`activation:${id}`, JSON.stringify(updatedActivation));
+      await redis.disconnect();
 
       return res.status(200).json(updatedActivation);
     } catch (error) {
       console.error('Error updating activation:', error);
+      if (redis) await redis.disconnect().catch(() => {});
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -80,21 +93,25 @@ export default async function handler(req, res) {
   // DELETE - Delete activation
   if (req.method === 'DELETE') {
     try {
-      const activation = await kv.hgetall(`activation:${id}`);
+      redis = await getRedisClient();
+      const activationData = await redis.get(`activation:${id}`);
       
-      if (!activation || Object.keys(activation).length === 0) {
+      if (!activationData) {
+        await redis.disconnect();
         return res.status(404).json({ error: 'Activation not found' });
       }
 
-      await kv.del(`activation:${id}`);
-      await kv.srem('activations', id);
+      await redis.del(`activation:${id}`);
+      await redis.sRem('activations', id);
+      await redis.disconnect();
 
       return res.status(200).json({ message: 'Activation deleted' });
     } catch (error) {
       console.error('Error deleting activation:', error);
+      if (redis) await redis.disconnect().catch(() => {});
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-}
+};

@@ -1,11 +1,19 @@
 // Vercel Serverless Function - Login
-import { kv } from '@vercel/kv';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+const { createClient } = require('redis');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
 
-export default async function handler(req, res) {
+async function getRedisClient() {
+  const client = createClient({
+    url: process.env.REDIS_URL
+  });
+  await client.connect();
+  return client;
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -19,38 +27,51 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { username, password } = req.body;
-
+  let redis;
   try {
-    // Get user from KV
-    const user = await kv.hgetall(`user:${username}`);
+    const { username, password } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    redis = await getRedisClient();
+
+    // Get user from Redis
+    const userData = await redis.get(`user:${username}`);
     
-    if (!user || Object.keys(user).length === 0) {
-      // Check for default admin (first time setup)
+    if (!userData) {
+      // First time setup - create admin user if credentials match default
       if (username === 'admin' && password === 'admin123') {
-        // Create default admin user
         const hashedPassword = bcrypt.hashSync('admin123', 10);
-        await kv.hset(`user:admin`, {
+        await redis.set(`user:admin`, JSON.stringify({
           id: 'admin',
           username: 'admin',
           password: hashedPassword,
           createdAt: new Date().toISOString()
-        });
+        }));
         
         const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
+        await redis.disconnect();
         return res.status(200).json({ token, username: 'admin' });
       }
+      await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const user = JSON.parse(userData);
+
     if (!bcrypt.compareSync(password, user.password)) {
+      await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+    await redis.disconnect();
     return res.status(200).json({ token, username: user.username });
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    if (redis) await redis.disconnect().catch(() => {});
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
-}
+};
