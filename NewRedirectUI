@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>EzRefill eSIM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- TYPOGRAPHY & RESET --- */
+        body {
+            font-family: 'Inter', -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+            background-color: #f2f2f7;
+            color: #1d1d1f;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- GLOBAL SCROLLBAR HIDING --- */
+        *::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- ENHANCED GLASSMORPHISM --- */
+        .glass-panel {
+            /* Lower opacity background to let the stronger blur show */
+            background: rgba(255, 255, 255, 0.75);
+            /* Significantly stronger blur for a "frosted" look */
+            backdrop-filter: blur(40px) saturate(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(120%);
+            /* Cleaner border */
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            /* Deeper outer shadow + subtle inner white glow for definition */
+            box-shadow: 
+                inset 0 0 0 1px rgba(255,255,255,0.3), 
+                0 8px 32px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            /* Subtle inner highlight */
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-enter { opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+
+        .active-scale:active { transform: scale(0.95); }
+
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+            50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        }
+        .animate-soft-pulse { animation: softPulse 3s infinite ease-in-out; }
+
+        /* --- UTILITIES --- */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 10%, #ffffff 0%, #f2f2f7 80%);
+        }
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+        }
+        
+        .cfg-btn {
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #1f2937;
+            transition: all 0.2s ease;
+        }
+        .cfg-btn.selected {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col overflow-hidden pb-safe pt-safe selection:bg-black selection:text-white">
+
+    <!-- Background Elements (Intensified for glass effect) -->
+    <div class="mesh-bg">
+        <div class="orb w-80 h-80 bg-blue-100 top-[-50px] left-[-50px] animate-pulse opacity-60" style="animation-duration: 8s;"></div>
+        <div class="orb w-72 h-72 bg-purple-100 bottom-[10%] right-[-20px] animate-pulse opacity-60" style="animation-duration: 10s;"></div>
+        <div class="orb w-48 h-48 bg-green-50 top-[40%] left-[30%] animate-pulse opacity-40" style="animation-duration: 12s;"></div>
+    </div>
+
+    <!-- Header / Branding -->
+    <div class="px-6 py-4 flex justify-between items-center z-10 animate-enter">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-black">椰子通讯</h1>
+            <p id="txt-brand-sub" class="text-[11px] text-gray-500 font-semibold tracking-wide uppercase">EzRefill</p>
+        </div>
+        
+        <!-- Language Switcher -->
+        <button onclick="toggleLanguage()" class="glass-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 active-scale">
+            <i class="ph-bold ph-translate text-gray-700 text-sm"></i>
+            <span id="txt-lang-btn" class="text-xs font-bold text-gray-800">EN / 中</span>
+        </button>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 px-5 pb-4 flex flex-col justify-between overflow-y-auto gap-4 z-0">
+        
+        <!-- SECTION 1: ACTIVATION (Primary Action) -->
+        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100">
+            <!-- Icon -->
+            <div class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
+                <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
+                <div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-white">
+                    <i class="ph-bold ph-check text-white text-[10px]"></i>
+                </div>
+            </div>
+
+            <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-1">eSIM Activation</h2>
+            <p id="txt-act-desc" class="text-xs text-gray-500 mb-6 leading-relaxed max-w-[240px] font-medium">
+                One tap to download your profile.
+            </p>
+
+            <!-- Main Button -->
+            <button id="activateBtn" onclick="startActivation()" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10">
+                <span id="btnText">Activate Now</span>
+                <div id="loadingSpinner" class="spinner hidden"></div>
+            </button>
+        </div>
+
+        <!-- SECTION 2: SHOP GRID -->
+        <div class="flex-1 flex flex-col justify-end">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-3 px-1 animate-enter delay-200">
+                <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 w-full">
+                
+                <!-- Product 1: iPhone -->
+                <button onclick="openProduct('iphone')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-200">
+                    <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
+                        <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
+                    </div>
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg z-10">
+                        <i class="ph-fill ph-device-mobile-camera text-gray-900"></i>
+                    </div>
+                    <div class="z-10 mt-auto">
+                        <h4 id="txt-p1-title" class="font-bold text-sm text-gray-900">iPhone 17</h4>
+                        <p id="txt-p1-sub" class="text-[11px] text-gray-500 font-medium">In Stock</p>
+                    </div>
+                    <i class="ph-duotone ph-device-mobile-camera absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
+                </button>
+
+                <!-- Product 2: Accessories -->
+                <button onclick="openProduct('accessories')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-200">
+                    <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
+                        <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
+                    </div>
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg z-10">
+                        <i class="ph-fill ph-headphones text-gray-900"></i>
+                    </div>
+                    <div class="z-10 mt-auto">
+                        <h4 id="txt-p2-title" class="font-bold text-sm text-gray-900">Accessories</h4>
+                        <p id="txt-p2-sub" class="text-[11px] text-gray-500 font-medium">MagSafe & Audio</p>
+                    </div>
+                    <i class="ph-duotone ph-headphones absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
+                </button>
+
+                <!-- Product 3: Data Plans -->
+                <button onclick="openProduct('plans')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-300">
+                    <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
+                        <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
+                    </div>
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg z-10">
+                        <i class="ph-fill ph-globe-hemisphere-east text-gray-900"></i>
+                    </div>
+                    <div class="z-10 mt-auto">
+                        <h4 id="txt-p3-title" class="font-bold text-sm text-gray-900">Global Data</h4>
+                        <p id="txt-p3-sub" class="text-[11px] text-gray-500 font-medium">China Plans</p>
+                    </div>
+                     <i class="ph-duotone ph-globe-hemisphere-east absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
+                </button>
+
+                 <!-- Product 4: Contact Us -->
+                 <button onclick="openProduct('support')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-300">
+                    <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
+                        <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
+                    </div>
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg z-10">
+                        <i class="ph-fill ph-map-pin text-gray-900"></i>
+                    </div>
+                    <div class="z-10 mt-auto">
+                        <h4 id="txt-p4-title" class="font-bold text-sm text-gray-900">Contact Us</h4>
+                        <p id="txt-p4-sub" class="text-[11px] text-gray-500 font-medium">Visit Store</p>
+                    </div>
+                     <i class="ph-duotone ph-map-pin absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- GENERIC BOTTOM SHEET / POPUP -->
+    <div id="productOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
+        <!-- Dim Background -->
+        <div id="dimmer" onclick="closeSheet()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
+        
+        <!-- Bottom Sheet Content (Also Frosted) -->
+        <div id="bottomSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
+            <!-- Drag Handle -->
+            <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
+            
+            <!-- Dynamic Content Area -->
+            <div id="sheetContent" class="flex flex-col items-center text-center">
+                <!-- Content injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOCALIZATION STATE ---
+        let currentLang = 'en'; // 'en' or 'zh'
+
+        // --- IPHONE CONFIG STATE ---
+        let iphoneConfig = {
+            region: 'na', // 'na' (North America) or 'hk' (Hong Kong)
+            model: 'pro', // 'pro' or 'max'
+            storage: '256' // '256' or '512'
+        };
+
+        // --- TRANSLATIONS (Static UI) ---
+        const uiText = {
+            'en': {
+                'txt-brand-sub': 'EzRefill',
+                'txt-lang-btn': '中文',
+                'txt-act-title': 'eSIM Activation',
+                'txt-act-desc': 'One tap to download your profile.',
+                'btnText': 'Activate Now',
+                'txt-shop-title': 'Store Offerings',
+                'txt-p1-title': 'iPhone 17',
+                'txt-p1-sub': 'In Stock',
+                'txt-p2-title': 'Accessories',
+                'txt-p2-sub': 'Cables, Audio & More',
+                'txt-p3-title': 'Global Data',
+                'txt-p3-sub': 'China & More',
+                'txt-p4-title': 'Contact Us',
+                'txt-p4-sub': 'Visit Store'
+            },
+            'zh': {
+                'txt-brand-sub': 'EzRefill',
+                'txt-lang-btn': 'English',
+                'txt-act-title': 'eSIM 激活',
+                'txt-act-desc': '一键下载您的 eSIM 配置文件。',
+                'btnText': '立即激活',
+                'txt-shop-title': '精选商品',
+                'txt-p1-title': 'iPhone 17',
+                'txt-p1-sub': '现货供应',
+                'txt-p2-title': '精选配件',
+                'txt-p2-sub': '数据线，耳机等',
+                'txt-p3-title': '全球流量',
+                'txt-p3-sub': '中国与全球套餐',
+                'txt-p4-title': '联系我们',
+                'txt-p4-sub': '门店地址'
+            }
+        };
+
+        // --- DATA OBJECTS ---
+        
+        // 1. Accessories List
+        const accessoriesList = [
+            { en: 'Charging Cable', zh: '充电数据线', icon: 'ph-plugs' },
+            { en: 'Power Adapter', zh: '充电头', icon: 'ph-lightning' },
+            { en: 'AirPods 4', zh: 'AirPods 4', icon: 'ph-headphones' },
+            { en: 'AirPods 4 Pro', zh: 'AirPods 4 Pro', icon: 'ph-headphones' },
+            { en: 'Screen Protector + Install', zh: '屏幕贴膜 + 安装', icon: 'ph-phone' },
+            { en: 'Transparent Case', zh: '透明保护壳', icon: 'ph-square' }
+        ];
+
+        // 2. Data Plans
+        const chinaPlans = {
+            en: {
+                title: 'China High-Speed Data',
+                validity30: '30 Days Validity',
+                validity90: '90 Days Validity',
+                btnOther: 'Inquire Other Countries',
+                plans30: [
+                    { gb: '3GB', price: '$30' },
+                    { gb: '5GB', price: '$40' },
+                    { gb: '10GB', price: '$50' },
+                    { gb: '20GB', price: '$60' }
+                ],
+                plans90: [
+                    { gb: '50GB', price: '$110' }
+                ]
+            },
+            zh: {
+                title: '中国高速流量包',
+                validity30: '30天 有效期',
+                validity90: '90天 有效期',
+                btnOther: '咨询其他国家',
+                plans30: [
+                    { gb: '3GB', price: '$30' },
+                    { gb: '5GB', price: '$40' },
+                    { gb: '10GB', price: '$50' },
+                    { gb: '20GB', price: '$60' }
+                ],
+                plans90: [
+                    { gb: '50GB', price: '$110' }
+                ]
+            }
+        };
+
+        // 3. Contact Info
+        const contactInfo = {
+            en: {
+                title: 'Visit Us',
+                subtitle: 'Come say hello.',
+                address: '136-78 Roosevelt Ave, Flushing, NY 11354',
+                phone: '718-509-5888',
+                btnCall: 'Call Us',
+                btnNav: 'Navigate'
+            },
+            zh: {
+                title: '门店地址',
+                subtitle: '欢迎光临',
+                address: '136-78 Roosevelt Ave, Flushing, NY 11354',
+                phone: '718-509-5888',
+                btnCall: '致电',
+                btnNav: '导航'
+            }
+        };
+
+        const successMessages = {
+            en: { title: 'Activation Started', desc: 'Downloading profile...', btn: 'Done' },
+            zh: { title: '激活已开始', desc: '正在下载配置文件...', btn: '完成' }
+        };
+
+        // --- IPHONE CONFIG LABELS ---
+        const iphoneLabels = {
+            en: {
+                title: 'iPhone 17 Series',
+                subtitle: 'Select your configuration.',
+                region_na: 'North America (eSIM Only)',
+                region_hk: 'Hong Kong (Physical + eSIM)',
+                storage_256: '256GB',
+                storage_512: '512GB', 
+                model_pro: '17 Pro',
+                model_max: '17 Pro Max',
+                btn: 'Inquire Now'
+            },
+            zh: {
+                title: 'iPhone 17 系列',
+                subtitle: '选择您的配置。',
+                region_na: '美版 (仅 eSIM)',
+                region_hk: '港版 (双卡/实体卡)',
+                storage_256: '256GB',
+                storage_512: '512GB', 
+                model_pro: '17 Pro',
+                model_max: '17 Pro Max',
+                btn: '立即咨询'
+            }
+        };
+
+        // --- FUNCTIONS ---
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            if (currentLang === 'zh') {
+                document.body.classList.add('font-medium', 'text-gray-900');
+            } else {
+                document.body.classList.remove('font-medium', 'text-gray-900');
+            }
+
+            const texts = uiText[currentLang];
+            for (const [id, text] of Object.entries(texts)) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = text;
+            }
+        }
+
+        function getIphonePrice() {
+            let base = 0;
+            if (iphoneConfig.region === 'na') {
+                base = iphoneConfig.model === 'pro' ? 1300 : 1400;
+            } else {
+                base = iphoneConfig.model === 'pro' ? 1550 : 1650;
+            }
+            if (iphoneConfig.storage === '512') {
+                base += 300;
+            }
+            return `$${base}`;
+        }
+
+        // RENDERERS
+
+        function renderIphoneContent() {
+            const labels = iphoneLabels[currentLang];
+            const price = getIphonePrice();
+            const contentDiv = document.getElementById('sheetContent');
+
+            contentDiv.innerHTML = `
+                <div class="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mb-3 shadow-inner">
+                    <i class="ph-fill ph-device-mobile-camera text-3xl text-gray-900"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-1">${labels.title}</h2>
+                <div class="text-3xl font-bold text-black mb-4 tracking-tight">${price}</div>
+                
+                <div class="w-full space-y-4 mb-6">
+                    <!-- Region -->
+                    <div class="flex gap-2">
+                        <button onclick="setIphoneState('region', 'na')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'na' ? 'selected' : ''}">
+                            ${labels.region_na}
+                        </button>
+                        <button onclick="setIphoneState('region', 'hk')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'hk' ? 'selected' : ''}">
+                            ${labels.region_hk}
+                        </button>
+                    </div>
+
+                    <!-- Model -->
+                    <div class="flex gap-2">
+                        <button onclick="setIphoneState('model', 'pro')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'pro' ? 'selected' : ''}">
+                            ${labels.model_pro}
+                        </button>
+                        <button onclick="setIphoneState('model', 'max')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'max' ? 'selected' : ''}">
+                            ${labels.model_max}
+                        </button>
+                    </div>
+
+                    <!-- Storage -->
+                    <div class="flex gap-2">
+                        <button onclick="setIphoneState('storage', '256')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '256' ? 'selected' : ''}">
+                            ${labels.storage_256}
+                        </button>
+                        <button onclick="setIphoneState('storage', '512')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '512' ? 'selected' : ''}">
+                            ${labels.storage_512}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- REDIRECTS TO CONTACT US -->
+                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">
+                    ${labels.btn}
+                </button>
+            `;
+        }
+
+        function renderAccessoriesContent() {
+            const contentDiv = document.getElementById('sheetContent');
+            const title = currentLang === 'en' ? 'Accessories' : '精选配件';
+            const subtitle = currentLang === 'en' ? 'Available in store' : '店内现货';
+
+            let itemsHtml = '';
+            accessoriesList.forEach(item => {
+                const name = currentLang === 'en' ? item.en : item.zh;
+                itemsHtml += `
+                    <div class="flex items-center gap-3 p-3 bg-white/60 rounded-xl border border-white/40">
+                        <div class="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-gray-700">
+                            <i class="ph-fill ${item.icon}"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-800 text-left flex-1">${name}</span>
+                    </div>
+                `;
+            });
+
+            contentDiv.innerHTML = `
+                <div class="w-16 h-16 bg-blue-50/80 rounded-full flex items-center justify-center mb-3 text-blue-600 shadow-inner">
+                    <i class="ph-fill ph-headphones text-3xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-1">${title}</h2>
+                <p class="text-sm font-medium text-gray-500 mb-6">${subtitle}</p>
+
+                <div class="grid grid-cols-1 gap-2 w-full mb-6">
+                    ${itemsHtml}
+                </div>
+                
+                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">
+                    ${currentLang === 'en' ? 'Check Availability' : '查询库存'}
+                </button>
+            `;
+        }
+
+        function renderPlansContent() {
+            const contentDiv = document.getElementById('sheetContent');
+            const data = chinaPlans[currentLang];
+
+            // Helper to make plan chips
+            const makePlanRow = (plan) => `
+                <div class="flex justify-between items-center p-3 bg-white/60 rounded-lg border border-white/40 shadow-sm">
+                    <span class="font-bold text-gray-900">${plan.gb}</span>
+                    <span class="font-semibold text-blue-600">${plan.price}</span>
+                </div>
+            `;
+
+            contentDiv.innerHTML = `
+                <div class="w-16 h-16 bg-green-50/80 rounded-full flex items-center justify-center mb-3 text-green-600 shadow-inner">
+                    <i class="ph-fill ph-globe-hemisphere-east text-3xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900 mb-6">${data.title}</h2>
+
+                <!-- 30 DAYS -->
+                <div class="w-full text-left mb-4">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity30}</p>
+                    <div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">
+                        ${data.plans30.map(makePlanRow).join('')}
+                    </div>
+                </div>
+
+                <!-- 90 DAYS -->
+                <div class="w-full text-left mb-6">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity90}</p>
+                    <div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">
+                        ${data.plans90.map(makePlanRow).join('')}
+                    </div>
+                </div>
+
+                <button onclick="openProduct('support')" class="w-full bg-black/5 text-black h-12 rounded-xl font-semibold text-sm active-scale border border-black/10">
+                    ${data.btnOther}
+                </button>
+            `;
+        }
+
+        function renderContactContent() {
+            const contentDiv = document.getElementById('sheetContent');
+            const data = contactInfo[currentLang];
+
+            contentDiv.innerHTML = `
+                <div class="w-20 h-20 bg-gray-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                    <i class="ph-fill ph-map-pin text-4xl text-red-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-1 text-gray-900">${data.title}</h2>
+                <p class="text-sm font-medium text-gray-500 mb-6">${data.subtitle}</p>
+                
+                <div class="w-full bg-white/50 rounded-xl p-6 mb-6 text-left border border-white/40 space-y-5 backdrop-blur-md">
+                    <div class="flex gap-3 items-start">
+                         <i class="ph-fill ph-map-pin text-gray-400 text-xl mt-1"></i>
+                         <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Address</p>
+                            <p class="text-xl font-bold text-gray-900 leading-snug">${data.address}</p>
+                         </div>
+                    </div>
+                    <div class="w-full h-px bg-black/10"></div>
+                    <div class="flex gap-3 items-start">
+                         <i class="ph-fill ph-phone text-gray-400 text-xl mt-1"></i>
+                         <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Phone</p>
+                            <p class="text-xl font-bold text-gray-900 leading-snug">${data.phone}</p>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 w-full">
+                    <a href="tel:7185095888" class="flex-1 bg-white/70 text-gray-900 h-14 rounded-xl font-semibold text-base flex items-center justify-center active-scale border border-white/50">
+                        <i class="ph-bold ph-phone mr-2"></i> ${data.btnCall}
+                    </a>
+                    <a href="https://maps.google.com/?q=136-78+Roosevelt+Ave,+Flushing,+NY+11354" target="_blank" class="flex-1 bg-blue-600 text-white h-14 rounded-xl font-semibold text-base flex items-center justify-center shadow-lg active-scale">
+                         <i class="ph-bold ph-arrow-bend-up-right mr-2"></i> ${data.btnNav}
+                    </a>
+                </div>
+            `;
+        }
+
+        // --- STATE MANAGEMENT ---
+
+        function setIphoneState(key, value) {
+            iphoneConfig[key] = value;
+            renderIphoneContent();
+        }
+
+        function openProduct(type) {
+            // Routing Logic
+            if (type === 'iphone') {
+                iphoneConfig = { region: 'na', model: 'pro', storage: '256' };
+                renderIphoneContent();
+                openSheet();
+                return;
+            }
+            if (type === 'accessories') {
+                renderAccessoriesContent();
+                openSheet();
+                return;
+            }
+            if (type === 'plans') {
+                renderPlansContent();
+                openSheet();
+                return;
+            }
+            if (type === 'support') {
+                renderContactContent();
+                openSheet();
+                return;
+            }
+        }
+
+        function startActivation() {
+            const btn = document.getElementById('activateBtn');
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('loadingSpinner');
+
+            btnText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            btn.disabled = true;
+
+            setTimeout(() => {
+                const msg = successMessages[currentLang];
+                btnText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+                btn.disabled = false;
+                
+                const contentDiv = document.getElementById('sheetContent');
+                contentDiv.innerHTML = `
+                    <div class="w-20 h-20 bg-green-100/80 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                        <i class="ph-bold ph-check text-4xl text-green-600"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2 text-gray-900">${msg.title}</h2>
+                    <p class="text-gray-500 text-sm mb-8 px-4">
+                        ${msg.desc}
+                    </p>
+                    <button onclick="closeSheet()" class="w-full bg-black text-white font-semibold h-14 rounded-xl transition-colors active-scale">
+                        ${msg.btn}
+                    </button>
+                `;
+                openSheet();
+
+            }, 1500);
+        }
+
+        function openSheet() {
+            const overlay = document.getElementById('productOverlay');
+            const sheet = document.getElementById('bottomSheet');
+            const dimmer = document.getElementById('dimmer');
+
+            overlay.classList.remove('pointer-events-none');
+            dimmer.classList.remove('bg-black/0');
+            dimmer.classList.add('bg-black/20'); // Lighter dimmer for frosted look
+            dimmer.classList.add('backdrop-blur-sm');
+            sheet.classList.remove('translate-y-full');
+        }
+
+        function closeSheet() {
+            const overlay = document.getElementById('productOverlay');
+            const sheet = document.getElementById('bottomSheet');
+            const dimmer = document.getElementById('dimmer');
+
+            sheet.classList.add('translate-y-full');
+            dimmer.classList.remove('bg-black/20');
+            dimmer.classList.add('bg-black/0');
+            dimmer.classList.remove('backdrop-blur-sm');
+
+            setTimeout(() => {
+                overlay.classList.add('pointer-events-none');
+            }, 300);
+        }
+    </script>
+</body>
+</html>

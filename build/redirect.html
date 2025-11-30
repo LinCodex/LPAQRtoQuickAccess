@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Opening eSIM Setup...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f8fafc;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            max-width: 400px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(96, 165, 250, 0.2);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .note {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 10px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            color: #fca5a5;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h1>Opening eSIM Setup</h1>
+        <p>Redirecting to Safari to install your eSIM...</p>
+        
+        <a id="manualBtn" class="btn" href="#">Tap to Install eSIM</a>
+        
+        <div class="note">
+            <strong>Note:</strong> If you're in WeChat or another app, this will open Safari first to complete the eSIM installation.
+        </div>
+        
+        <div id="error" class="error">
+            Could not detect the eSIM link. Please go back and try again.
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Get the target URL from query params
+            const params = new URLSearchParams(window.location.search);
+            const targetUrl = params.get('url');
+            
+            const manualBtn = document.getElementById('manualBtn');
+            const errorDiv = document.getElementById('error');
+            
+            if (!targetUrl) {
+                errorDiv.style.display = 'block';
+                manualBtn.style.display = 'none';
+                return;
+            }
+            
+            // Set the manual button href
+            manualBtn.href = targetUrl;
+            
+            // Detect if we're in WeChat or other in-app browser
+            const ua = navigator.userAgent.toLowerCase();
+            const isWeChat = ua.includes('micromessenger');
+            const isInAppBrowser = isWeChat || ua.includes('line') || ua.includes('fbav') || ua.includes('instagram');
+            
+            if (isInAppBrowser) {
+                // For in-app browsers, show instructions
+                document.querySelector('p').textContent = 'Tap the button below to open Safari and install your eSIM.';
+                
+                // Try to open in Safari using various methods
+                // Method 1: Direct navigation (works in some cases)
+                setTimeout(function() {
+                    window.location.href = targetUrl;
+                }, 1500);
+            } else {
+                // For Safari/Chrome, redirect immediately
+                setTimeout(function() {
+                    window.location.href = targetUrl;
+                }, 500);
+            }
+        })();
+    </script>
+</body>
+</html>
