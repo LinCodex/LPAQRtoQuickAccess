@@ -240,17 +240,90 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
+/* Manual Input Section */
+.manual-input-section {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.manual-input-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+}
+
+.manual-input-section .input-group {
+  margin-bottom: 12px;
+}
+
+.manual-input-section .primary-btn {
+  margin-top: 8px;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.divider span {
+  padding: 0 12px;
+  color: #6b7280;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Input Group */
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .input-group label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #6b7280;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.input-group input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  color: #1f2937;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-group input[type="text"]:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.input-group input[type="text"]::placeholder {
+  color: #9ca3af;
 }
 
 .input-group textarea {
@@ -782,7 +855,38 @@
 
   .input-group textarea {
     font-size: 12px;
+    padding: 10px;
+  }
+
+  .input-group input[type="text"] {
+    font-size: 16px; /* Prevents iOS zoom on focus */
     padding: 12px;
+  }
+
+  .manual-input-section {
+    padding: 14px;
+  }
+
+  .manual-input-section h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .manual-input-section .input-group {
+    margin-bottom: 10px;
+  }
+
+  .divider {
+    margin: 12px 0;
+  }
+
+  .divider span {
+    font-size: 10px;
+    padding: 0 10px;
+  }
+
+  .scanner-container {
+    min-height: 220px;
   }
 }
 

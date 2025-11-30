@@ -95,16 +95,16 @@
         </button>
     </div>
 
-    <div class="flex-1 px-5 pb-4 flex flex-col justify-center overflow-y-auto gap-4 z-0">
-        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100">
-            <div class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
-                <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
+    <div class="flex-1 px-5 pb-4 flex flex-col justify-start overflow-y-auto gap-3 z-0 pt-2">
+        <div class="glass-panel rounded-[2rem] p-5 flex flex-col items-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100">
+            <div class="w-14 h-14 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-3 relative border border-white/60">
+                <i class="ph-duotone ph-sim-card text-2xl text-black"></i>
                 <div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-white">
                     <i class="ph-bold ph-check text-white text-[10px]"></i>
                 </div>
             </div>
-            <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-1">eSIM Activation</h2>
-            <p id="txt-act-desc" class="text-xs text-gray-500 mb-6 leading-relaxed max-w-[240px] font-medium">One tap to download your profile.</p>
+            <h2 id="txt-act-title" class="text-lg font-bold text-gray-900 mb-1">eSIM Activation</h2>
+            <p id="txt-act-desc" class="text-xs text-gray-500 mb-4 leading-relaxed max-w-[240px] font-medium">One tap to download your profile.</p>
             <a id="activateBtn" href="#" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
                 <span id="btnText">Activate Now</span>
             </a>
@@ -114,12 +114,12 @@
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col justify-end">
+        <div class="flex flex-col">
             <div class="flex items-center justify-between mb-3 px-1 animate-enter delay-200">
                 <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
             </div>
-            <div class="grid grid-cols-2 gap-3 w-full">
-                <button onclick="openProduct('iphone')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-200">
+            <div class="grid grid-cols-2 gap-2 w-full">
+                <button onclick="openProduct('iphone')" class="glass-panel p-3 rounded-2xl flex flex-col items-start gap-2 active-scale text-left h-28 relative overflow-hidden group animate-enter delay-200">
                     <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
                         <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
                     </div>
@@ -132,7 +132,7 @@
                     </div>
                     <i class="ph-duotone ph-device-mobile-camera absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
                 </button>
-                <button onclick="openProduct('accessories')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-200">
+                <button onclick="openProduct('accessories')" class="glass-panel p-3 rounded-2xl flex flex-col items-start gap-2 active-scale text-left h-28 relative overflow-hidden group animate-enter delay-200">
                     <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
                         <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
                     </div>
@@ -145,7 +145,7 @@
                     </div>
                     <i class="ph-duotone ph-headphones absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
                 </button>
-                <button onclick="openProduct('plans')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-300">
+                <button onclick="openProduct('plans')" class="glass-panel p-3 rounded-2xl flex flex-col items-start gap-2 active-scale text-left h-28 relative overflow-hidden group animate-enter delay-300">
                     <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
                         <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
                     </div>
@@ -158,7 +158,7 @@
                     </div>
                     <i class="ph-duotone ph-globe-hemisphere-east absolute -bottom-4 -right-4 text-[5rem] text-gray-400 opacity-20 group-hover:scale-110 transition-transform"></i>
                 </button>
-                <button onclick="openProduct('support')" class="glass-panel p-4 rounded-2xl flex flex-col items-start gap-3 active-scale text-left h-32 relative overflow-hidden group animate-enter delay-300">
+                <button onclick="openProduct('support')" class="glass-panel p-3 rounded-2xl flex flex-col items-start gap-2 active-scale text-left h-28 relative overflow-hidden group animate-enter delay-300">
                     <div class="absolute top-3 right-3 w-6 h-6 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm z-20 border border-white/30">
                         <i class="ph-bold ph-caret-right text-[10px] text-gray-700"></i>
                     </div>
@@ -184,7 +184,18 @@
     </div>
 
     <script>
-        let currentLang = 'en';
+        // Auto-detect language based on device language
+        function detectLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage || 'en';
+            // Check if Chinese (any variant: zh, zh-CN, zh-TW, zh-HK, etc.)
+            if (browserLang.toLowerCase().startsWith('zh')) {
+                return 'zh';
+            }
+            // Default to English for all other languages
+            return 'en';
+        }
+        
+        let currentLang = detectLanguage();
         let iphoneConfig = { region: 'na', model: 'pro', storage: '256' };
         const uiText = {
             'en': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': '中文', 'txt-act-title': 'eSIM Activation', 'txt-act-desc': 'One tap to download your profile.', 'btnText': 'Activate Now', 'txt-shop-title': 'Store Offerings', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': 'In Stock', 'txt-p2-title': 'Accessories', 'txt-p2-sub': 'Cables, Audio & More', 'txt-p3-title': 'Global Data', 'txt-p3-sub': 'China & More', 'txt-p4-title': 'Contact Us', 'txt-p4-sub': 'Visit Store', 'errorText': 'Invalid link. Please try again.' },
@@ -222,7 +233,18 @@
                 return;
             }
             activateBtn.href = targetUrl;
+            
+            // Apply detected language on page load
+            applyLanguage(currentLang);
         })();
+        
+        function applyLanguage(lang) {
+            const texts = uiText[lang];
+            for (const [id, text] of Object.entries(texts)) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = text;
+            }
+        }
 
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'zh' : 'en';
