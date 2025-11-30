@@ -96,15 +96,15 @@
     </div>
 
     <div class="flex-1 px-5 pb-4 flex flex-col justify-start overflow-y-auto gap-3 z-0 pt-2">
-        <div class="glass-panel rounded-[2rem] p-5 flex flex-col items-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100">
-            <div class="w-14 h-14 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-3 relative border border-white/60">
-                <i class="ph-duotone ph-sim-card text-2xl text-black"></i>
+        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100 min-h-[45vh]">
+            <div class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
+                <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
                 <div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-white">
                     <i class="ph-bold ph-check text-white text-[10px]"></i>
                 </div>
             </div>
-            <h2 id="txt-act-title" class="text-lg font-bold text-gray-900 mb-1">eSIM Activation</h2>
-            <p id="txt-act-desc" class="text-xs text-gray-500 mb-4 leading-relaxed max-w-[240px] font-medium">One tap to download your profile.</p>
+            <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-2">eSIM Activation</h2>
+            <p id="txt-act-desc" class="text-sm text-gray-500 mb-6 leading-relaxed max-w-[260px] font-medium">One tap to download your profile.</p>
             <a id="activateBtn" href="#" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
                 <span id="btnText">Activate Now</span>
             </a>
@@ -118,58 +118,58 @@
             <div class="flex items-center justify-between mb-2 px-1 animate-enter delay-200">
                 <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
             </div>
-            <div class="flex flex-col gap-2 w-full flex-1">
-                <button onclick="openProduct('iphone')" class="glass-panel p-4 rounded-2xl flex items-center gap-4 active-scale text-left flex-1 min-h-[70px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-12 h-12 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-xl flex-shrink-0">
+            <div class="flex flex-col gap-2 w-full">
+                <button onclick="openProduct('iphone')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-device-mobile-camera text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
-                        <h4 id="txt-p1-title" class="font-bold text-base text-gray-900">iPhone 17</h4>
-                        <p id="txt-p1-sub" class="text-xs text-gray-500 font-medium">In Stock</p>
+                        <h4 id="txt-p1-title" class="font-bold text-sm text-gray-900">iPhone 17</h4>
+                        <p id="txt-p1-sub" class="text-[11px] text-gray-500 font-medium">In Stock</p>
                     </div>
-                    <div class="w-8 h-8 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-sm text-gray-700"></i>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-device-mobile-camera absolute -right-6 top-1/2 -translate-y-1/2 text-[6rem] text-gray-400 opacity-10"></i>
+                    <i class="ph-duotone ph-device-mobile-camera absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('accessories')" class="glass-panel p-4 rounded-2xl flex items-center gap-4 active-scale text-left flex-1 min-h-[70px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-12 h-12 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-xl flex-shrink-0">
+                <button onclick="openProduct('accessories')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-headphones text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
-                        <h4 id="txt-p2-title" class="font-bold text-base text-gray-900">Accessories</h4>
-                        <p id="txt-p2-sub" class="text-xs text-gray-500 font-medium">Cables, Audio & More</p>
+                        <h4 id="txt-p2-title" class="font-bold text-sm text-gray-900">Accessories</h4>
+                        <p id="txt-p2-sub" class="text-[11px] text-gray-500 font-medium">Cables, Audio & More</p>
                     </div>
-                    <div class="w-8 h-8 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-sm text-gray-700"></i>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-headphones absolute -right-6 top-1/2 -translate-y-1/2 text-[6rem] text-gray-400 opacity-10"></i>
+                    <i class="ph-duotone ph-headphones absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('plans')" class="glass-panel p-4 rounded-2xl flex items-center gap-4 active-scale text-left flex-1 min-h-[70px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-12 h-12 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-xl flex-shrink-0">
+                <button onclick="openProduct('plans')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-globe-hemisphere-east text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
-                        <h4 id="txt-p3-title" class="font-bold text-base text-gray-900">Global Data</h4>
-                        <p id="txt-p3-sub" class="text-xs text-gray-500 font-medium">China & More</p>
+                        <h4 id="txt-p3-title" class="font-bold text-sm text-gray-900">Global Data</h4>
+                        <p id="txt-p3-sub" class="text-[11px] text-gray-500 font-medium">China & More</p>
                     </div>
-                    <div class="w-8 h-8 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-sm text-gray-700"></i>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-globe-hemisphere-east absolute -right-6 top-1/2 -translate-y-1/2 text-[6rem] text-gray-400 opacity-10"></i>
+                    <i class="ph-duotone ph-globe-hemisphere-east absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('support')" class="glass-panel p-4 rounded-2xl flex items-center gap-4 active-scale text-left flex-1 min-h-[70px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-12 h-12 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-xl flex-shrink-0">
+                <button onclick="openProduct('support')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-map-pin text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
-                        <h4 id="txt-p4-title" class="font-bold text-base text-gray-900">Contact Us</h4>
-                        <p id="txt-p4-sub" class="text-xs text-gray-500 font-medium">Visit Store</p>
+                        <h4 id="txt-p4-title" class="font-bold text-sm text-gray-900">Contact Us</h4>
+                        <p id="txt-p4-sub" class="text-[11px] text-gray-500 font-medium">Visit Store</p>
                     </div>
-                    <div class="w-8 h-8 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-sm text-gray-700"></i>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-map-pin absolute -right-6 top-1/2 -translate-y-1/2 text-[6rem] text-gray-400 opacity-10"></i>
+                    <i class="ph-duotone ph-map-pin absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
             </div>
         </div>
