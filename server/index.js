@@ -143,6 +143,52 @@ app.post('/api/auth/change-password', authenticateToken, (req, res) => {
   res.json({ message: 'Password changed successfully' });
 });
 
+// ============ PUBLIC STANDBY CREATION ============
+
+// Create standby activation (public - for webapp)
+app.post('/api/admin/activations', (req, res, next) => {
+  // Check if this is an authenticated request
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    // If token provided, verify it and continue to authenticated handler
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+      if (!err) {
+        req.user = user;
+      }
+      next();
+    });
+  } else {
+    // No token - allow public standby creation
+    next();
+  }
+}, (req, res) => {
+  const { phoneNumber, notes, lpaCode } = req.body;
+  const activations = readActivations();
+
+  // If LPA code is provided and no auth, reject
+  if (lpaCode && !req.user) {
+    return res.status(401).json({ error: 'Authentication required to set LPA code' });
+  }
+
+  const newActivation = {
+    id: uuidv4().split('-')[0], // Short ID for easier sharing
+    phoneNumber: phoneNumber || '',
+    notes: notes || '',
+    status: lpaCode ? 'active' : 'standby',
+    lpaCode: lpaCode || null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    createdBy: req.user ? req.user.username : 'webapp'
+  };
+
+  activations.push(newActivation);
+  writeActivations(activations);
+
+  res.status(201).json(newActivation);
+});
+
 // ============ ADMIN ROUTES (Protected) ============
 
 // Get all activations
@@ -151,28 +197,6 @@ app.get('/api/admin/activations', authenticateToken, (req, res) => {
   // Sort by createdAt descending (newest first)
   activations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   res.json(activations);
-});
-
-// Create new activation (standby)
-app.post('/api/admin/activations', authenticateToken, (req, res) => {
-  const { phoneNumber, notes } = req.body;
-  const activations = readActivations();
-
-  const newActivation = {
-    id: uuidv4().split('-')[0], // Short ID for easier sharing
-    phoneNumber: phoneNumber || '',
-    notes: notes || '',
-    status: 'standby',
-    lpaCode: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    createdBy: req.user.username
-  };
-
-  activations.push(newActivation);
-  writeActivations(activations);
-
-  res.status(201).json(newActivation);
 });
 
 // Update activation

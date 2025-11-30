@@ -239,7 +239,7 @@
         // API Configuration
         const API_BASE = window.location.hostname === 'localhost' 
             ? 'http://localhost:3001/api' 
-            : '/api';
+            : 'https://lpaquicklink.vercel.app/api';
 
         let token = localStorage.getItem('ezrefill_token');
         let activations = [];
@@ -448,8 +448,7 @@
         }
 
         function getActivationLink(id) {
-            const baseUrl = window.location.origin;
-            return `${baseUrl}/activate.html?id=${id}`;
+            return `https://lpaquicklink.vercel.app/activate?id=${id}`;
         }
 
         function copyActivationLink(id) {

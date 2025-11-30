@@ -14,7 +14,10 @@ import {
   RefreshCw,
   Share2,
   Download,
-  MessageCircle
+  MessageCircle,
+  Settings,
+  Clock,
+  Phone
 } from 'lucide-react';
 import './App.css';
 
@@ -31,13 +34,58 @@ function App() {
   const [scannerPaused, setScannerPaused] = useState(false);
   const [shortLink, setShortLink] = useState('');
   const [isShortening, setIsShortening] = useState(false);
+  const [standbyPhone, setStandbyPhone] = useState('');
+  const [standbyLink, setStandbyLink] = useState('');
+  const [isCreatingStandby, setIsCreatingStandby] = useState(false);
+  const [standbyError, setStandbyError] = useState('');
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
+
+  // API Configuration
+  const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3001/api' 
+    : 'https://lpaquicklink.vercel.app/api';
 
   // Short.io configuration
   const SHORTIO_API_KEY = 'sk_vDzD3cciTgwFOR0D';
   const SHORTIO_DOMAIN = 'ezrefill.short.gy';
   const fileInputRef = useRef(null);
+
+  // Create standby activation URL
+  const createStandbyUrl = async () => {
+    setIsCreatingStandby(true);
+    setStandbyError('');
+    setStandbyLink('');
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/activations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: standbyPhone,
+          notes: 'Created from webapp'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create standby URL');
+      }
+
+      const data = await response.json();
+      const baseUrl = 'https://lpaquicklink.vercel.app';
+      setStandbyLink(`${baseUrl}/activate?id=${data.id}`);
+    } catch (err) {
+      setStandbyError('Failed to create standby URL. Make sure the server is running.');
+    } finally {
+      setIsCreatingStandby(false);
+    }
+  };
+
+  const copyStandbyLink = () => {
+    navigator.clipboard.writeText(standbyLink);
+  };
 
   // Parse LPA code and generate activation link
   const parseLpaCode = (code) => {
@@ -65,8 +113,8 @@ function App() {
     
     // Create a redirect URL that forces Safari to open (bypasses WeChat browser)
     // Uses the deployed redirect page
-    const baseUrl = window.location.origin;
-    const safariRedirectLink = `${baseUrl}/redirect.html?url=${encodeURIComponent(appleLink)}`;
+    const baseUrl = 'https://lpaquicklink.vercel.app';
+    const safariRedirectLink = `${baseUrl}/redirect?url=${encodeURIComponent(appleLink)}`;
     
     return safariRedirectLink;
   };
@@ -339,9 +387,14 @@ function App() {
     <div className="app">
       <div className="container">
         <header className="header">
-          <div className="logo">
-            <Smartphone className="logo-icon" />
-            <h1>EZRefill</h1>
+          <div className="header-top">
+            <div className="logo">
+              <Smartphone className="logo-icon" />
+              <h1>EZRefill</h1>
+            </div>
+            <a href="/admin" className="admin-btn" title="Admin Panel">
+              <Settings size={18} />
+            </a>
           </div>
           <p className="subtitle">eSIM 快速激活链接生成器</p>
         </header>
@@ -438,7 +491,62 @@ function App() {
                 readOnly
               />
             </div>
+          </section>
 
+          {/* Standby URL Section */}
+          <section className="card standby-section">
+            <h2>
+              <Clock size={20} />
+              Create Standby URL
+            </h2>
+            <p className="section-desc">Generate a pre-activation link for customers. Add LPA code later via Admin Panel.</p>
+            
+            <div className="input-group">
+              <label htmlFor="standby-phone">
+                <Phone size={14} style={{ display: 'inline', marginRight: '6px' }} />
+                Customer Phone (Optional)
+              </label>
+              <input
+                type="text"
+                id="standby-phone"
+                value={standbyPhone}
+                onChange={(e) => setStandbyPhone(e.target.value)}
+                placeholder="e.g. 718-555-1234"
+              />
+            </div>
+
+            <button 
+              className="primary-btn standby-btn"
+              onClick={createStandbyUrl}
+              disabled={isCreatingStandby}
+            >
+              {isCreatingStandby ? (
+                <><RefreshCw size={18} className="spinning" /> Creating...</>
+              ) : (
+                <><Clock size={18} /> Generate Standby URL</>
+              )}
+            </button>
+
+            {standbyError && (
+              <div className="error-message">{standbyError}</div>
+            )}
+
+            {standbyLink && (
+              <div className="standby-result">
+                <div className="standby-link-display">
+                  <span className="standby-label">Standby Link:</span>
+                  <code className="standby-url">{standbyLink}</code>
+                  <button className="copy-standby-btn" onClick={copyStandbyLink}>
+                    <Copy size={16} />
+                  </button>
+                </div>
+                <p className="standby-hint">Send this link to customer. Activate it later in the Admin Panel.</p>
+              </div>
+            )}
+          </section>
+
+          {/* LPA Code Processing Section */}
+          <section className="card">
             {error && (
               <div className="error-message">
                 {error}
@@ -538,6 +646,9 @@ function App() {
 
         <footer className="footer">
           <p>Powered by EZRefill eSIM</p>
+          <a href="/admin" className="footer-admin-link">
+            <Settings size={14} /> Admin Panel
+          </a>
         </footer>
       </div>
     </div>
