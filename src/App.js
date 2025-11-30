@@ -36,6 +36,7 @@ function App() {
   const [isShortening, setIsShortening] = useState(false);
   const [standbyPhone, setStandbyPhone] = useState('');
   const [standbyLink, setStandbyLink] = useState('');
+  const [standbyShortLink, setStandbyShortLink] = useState('');
   const [isCreatingStandby, setIsCreatingStandby] = useState(false);
   const [standbyError, setStandbyError] = useState('');
   const html5QrCodeRef = useRef(null);
@@ -56,6 +57,7 @@ function App() {
     setIsCreatingStandby(true);
     setStandbyError('');
     setStandbyLink('');
+    setStandbyShortLink('');
 
     try {
       const response = await fetch(`${API_BASE}/admin/activations`, {
@@ -75,7 +77,41 @@ function App() {
 
       const data = await response.json();
       const baseUrl = 'https://lpaquicklink.vercel.app';
-      setStandbyLink(`${baseUrl}/activate?id=${data.id}`);
+      const longUrl = `${baseUrl}/activate?id=${data.id}`;
+      setStandbyLink(longUrl);
+
+      // Create short URL with last 4 digits of phone + date as path
+      const phoneDigits = standbyPhone.replace(/\D/g, '');
+      const last4 = phoneDigits.slice(-4);
+      const today = new Date();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const customPath = last4 ? `${last4}-${month}${day}` : undefined;
+
+      try {
+        const shortResponse = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': SHORTIO_API_KEY
+          },
+          body: JSON.stringify({
+            domain: SHORTIO_DOMAIN,
+            originalURL: longUrl,
+            path: customPath,
+            allowDuplicates: false
+          })
+        });
+
+        const shortData = await shortResponse.json();
+        if (shortData.shortURL) {
+          setStandbyShortLink(shortData.shortURL);
+        }
+      } catch (shortErr) {
+        console.error('Failed to create short link for standby:', shortErr);
+        // Continue without short link - not critical
+      }
     } catch (err) {
       setStandbyError('Failed to create standby URL. Make sure the server is running.');
     } finally {
@@ -512,58 +548,6 @@ function App() {
             </div>
           </section>
 
-          {/* Standby URL Section */}
-          <section className="card standby-section">
-            <h2>
-              <Clock size={20} />
-              Create Standby URL
-            </h2>
-            <p className="section-desc">Generate a pre-activation link for customers. Add LPA code later via Admin Panel.</p>
-            
-            <div className="input-group">
-              <label htmlFor="standby-phone">
-                <Phone size={14} style={{ display: 'inline', marginRight: '6px' }} />
-                Customer Phone (Optional)
-              </label>
-              <input
-                type="text"
-                id="standby-phone"
-                value={standbyPhone}
-                onChange={(e) => setStandbyPhone(e.target.value)}
-                placeholder="e.g. 718-555-1234"
-              />
-            </div>
-
-            <button 
-              className="primary-btn standby-btn"
-              onClick={createStandbyUrl}
-              disabled={isCreatingStandby}
-            >
-              {isCreatingStandby ? (
-                <><RefreshCw size={18} className="spinning" /> Creating...</>
-              ) : (
-                <><Clock size={18} /> Generate Standby URL</>
-              )}
-            </button>
-
-            {standbyError && (
-              <div className="error-message">{standbyError}</div>
-            )}
-
-            {standbyLink && (
-              <div className="standby-result">
-                <div className="standby-link-display">
-                  <span className="standby-label">Standby Link:</span>
-                  <code className="standby-url">{standbyLink}</code>
-                  <button className="copy-standby-btn" onClick={copyStandbyLink}>
-                    <Copy size={16} />
-                  </button>
-                </div>
-                <p className="standby-hint">Send this link to customer. Activate it later in the Admin Panel.</p>
-              </div>
-            )}
-          </section>
-
           {/* Output Section */}
           {generatedLink && (
             <section className="card output-section">
@@ -639,6 +623,67 @@ function App() {
               </div>
             </section>
           )}
+
+          {/* Standby URL Section */}
+          <section className="card standby-section">
+            <h2>
+              <Clock size={20} />
+              Create Standby URL
+            </h2>
+            <p className="section-desc">Generate a pre-activation link for customers. Add LPA code later via Admin Panel.</p>
+            
+            <div className="input-group">
+              <label htmlFor="standby-phone">
+                <Phone size={14} style={{ display: 'inline', marginRight: '6px' }} />
+                Customer Phone (Optional)
+              </label>
+              <input
+                type="text"
+                id="standby-phone"
+                value={standbyPhone}
+                onChange={(e) => setStandbyPhone(e.target.value)}
+                placeholder="e.g. 718-555-1234"
+              />
+            </div>
+
+            <button 
+              className="primary-btn standby-btn"
+              onClick={createStandbyUrl}
+              disabled={isCreatingStandby}
+            >
+              {isCreatingStandby ? (
+                <><RefreshCw size={18} className="spinning" /> Creating...</>
+              ) : (
+                <><Clock size={18} /> Generate Standby URL</>
+              )}
+            </button>
+
+            {standbyError && (
+              <div className="error-message">{standbyError}</div>
+            )}
+
+            {standbyLink && (
+              <div className="standby-result">
+                {standbyShortLink && (
+                  <div className="standby-link-display" style={{ marginBottom: '12px' }}>
+                    <span className="standby-label">Short Link:</span>
+                    <code className="standby-url">{standbyShortLink}</code>
+                    <button className="copy-standby-btn" onClick={() => navigator.clipboard.writeText(standbyShortLink)}>
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                )}
+                <div className="standby-link-display">
+                  <span className="standby-label">Full Link:</span>
+                  <code className="standby-url">{standbyLink}</code>
+                  <button className="copy-standby-btn" onClick={copyStandbyLink}>
+                    <Copy size={16} />
+                  </button>
+                </div>
+                <p className="standby-hint">Send this link to customer. Activate it later in the Admin Panel.</p>
+              </div>
+            )}
+          </section>
         </main>
 
         <footer className="footer">
