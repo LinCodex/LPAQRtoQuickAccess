@@ -281,13 +281,24 @@
                     </div>
                 </div>
 
-                <div id="linkPreview" class="hidden bg-gray-50 rounded-xl p-4">
-                    <label class="block text-xs font-medium text-gray-500 mb-2">Customer Link</label>
-                    <div class="flex items-center gap-2">
-                        <input type="text" id="linkDisplay" readonly class="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
-                        <button type="button" onclick="copyLink()" class="px-3 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
-                            <i class="ph-bold ph-copy"></i>
-                        </button>
+                <div id="linkPreview" class="hidden bg-gray-50 rounded-xl p-4 space-y-3">
+                    <div id="shortLinkSection" class="hidden">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Short Link</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="shortLinkDisplay" readonly class="flex-1 px-3 py-2 bg-white rounded-lg border border-green-300 text-sm font-mono text-green-700">
+                            <button type="button" onclick="copyShortLink()" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                                <i class="ph-bold ph-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Full Link</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="linkDisplay" readonly class="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
+                            <button type="button" onclick="copyLink()" class="px-3 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                                <i class="ph-bold ph-copy"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -577,6 +588,7 @@
             document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
             document.getElementById('statusSection').classList.add('hidden');
             document.getElementById('linkPreview').classList.add('hidden');
+            document.getElementById('shortLinkSection').classList.add('hidden');
             formStatus = 'standby';
             document.getElementById('modal').classList.remove('hidden');
         }
@@ -598,7 +610,17 @@
             document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
             document.getElementById('statusSection').classList.remove('hidden');
             document.getElementById('linkPreview').classList.remove('hidden');
-            document.getElementById('linkDisplay').value = activation.shortUrl || getActivationLink(id);
+            
+            // Show both short and full links
+            const fullLink = getActivationLink(id);
+            document.getElementById('linkDisplay').value = fullLink;
+            
+            if (activation.shortUrl) {
+                document.getElementById('shortLinkSection').classList.remove('hidden');
+                document.getElementById('shortLinkDisplay').value = activation.shortUrl;
+            } else {
+                document.getElementById('shortLinkSection').classList.add('hidden');
+            }
             
             formStatus = activation.status;
             updateStatusButtons();
@@ -877,6 +899,13 @@
         function copyLink() {
             const link = document.getElementById('linkDisplay').value;
             navigator.clipboard.writeText(link);
+            showToast('Full link copied!');
+        }
+
+        function copyShortLink() {
+            const link = document.getElementById('shortLinkDisplay').value;
+            navigator.clipboard.writeText(link);
+            showToast('Short link copied!');
         }
 
         // Form submission
@@ -895,8 +924,13 @@
             submitBtn.disabled = true;
             submitBtnText.textContent = 'Creating...';
 
-            const body = { phoneNumber, notes, lpaCode };
-            if (editId) body.status = formStatus;
+            // Auto-set status to active if LPA code is provided
+            let statusToSend = formStatus;
+            if (lpaCode && lpaCode.trim()) {
+                statusToSend = 'active';
+            }
+
+            const body = { phoneNumber, notes, lpaCode, status: statusToSend };
 
             try {
                 const url = editId 

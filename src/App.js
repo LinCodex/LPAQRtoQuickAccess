@@ -39,6 +39,10 @@ function App() {
   const [standbyShortLink, setStandbyShortLink] = useState('');
   const [isCreatingStandby, setIsCreatingStandby] = useState(false);
   const [standbyError, setStandbyError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
 
@@ -51,6 +55,41 @@ function App() {
   const SHORTIO_API_KEY = 'sk_vDzD3cciTgwFOR0D';
   const SHORTIO_DOMAIN = 'ezrefill.short.gy';
   const fileInputRef = useRef(null);
+
+  // Check for saved authentication on mount
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('ezrefill_webapp_auth');
+    if (savedAuth === 'authenticated') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Login function - uses same credentials as admin panel
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'admin', password: loginPassword })
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        localStorage.setItem('ezrefill_webapp_auth', 'authenticated');
+        setLoginPassword('');
+      } else {
+        setLoginError('Incorrect password');
+      }
+    } catch (err) {
+      setLoginError('Connection error. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   // Create standby activation URL
   const createStandbyUrl = async () => {
@@ -437,6 +476,42 @@ function App() {
       }
     };
   }, []);
+
+  // Login screen
+  if (!isAuthenticated) {
+    return (
+      <div className="app">
+        <div className="container">
+          <div className="login-screen">
+            <div className="login-card">
+              <div className="login-logo">
+                <Smartphone className="logo-icon" />
+                <h1>EZRefill</h1>
+              </div>
+              <p className="login-subtitle">eSIM Quick Access Tool</p>
+              <form onSubmit={handleLogin} className="login-form">
+                <div className="input-group">
+                  <label htmlFor="login-password">Password</label>
+                  <input
+                    type="password"
+                    id="login-password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter password"
+                    autoFocus
+                  />
+                </div>
+                {loginError && <div className="error-message">{loginError}</div>}
+                <button type="submit" className="primary-btn login-btn" disabled={isLoggingIn}>
+                  {isLoggingIn ? 'Signing in...' : 'Sign In'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
