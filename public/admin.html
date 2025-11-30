@@ -23,6 +23,8 @@
         .animate-spin { animation: spin 1s linear infinite; }
         @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -271,7 +273,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">LPA Code</label>
                     
                     <!-- QR Scanner Toggle -->
-                    <div class="flex gap-2 mb-2">
+                    <div class="flex flex-wrap gap-2 mb-2">
                         <button type="button" onclick="toggleQrScanner()" id="qrScanBtn" class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
                             <i class="ph-bold ph-qr-code"></i>
                             <span id="qrScanBtnText">Scan QR Code</span>
@@ -281,6 +283,10 @@
                             Upload QR
                             <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
                         </label>
+                        <button type="button" onclick="startScreenCutout()" id="cutoutBtn" class="flex items-center gap-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 rounded-lg text-sm font-medium text-purple-700 transition">
+                            <i class="ph-bold ph-selection"></i>
+                            <span id="cutoutBtnText">Screen Cutout</span>
+                        </button>
                         <button type="button" onclick="toggleManualEntry()" id="manualEntryBtn" class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
                             <i class="ph-bold ph-keyboard"></i>
                             Manual Entry
@@ -291,6 +297,29 @@
                     <div id="qrScannerContainer" class="hidden mb-3">
                         <div id="qrReader" class="rounded-xl overflow-hidden"></div>
                         <div id="qrScannerStatus" class="text-center text-sm text-gray-500 mt-2">Point camera at LPA QR code</div>
+                    </div>
+                    
+                    <!-- Screen Cutout Status Container -->
+                    <div id="cutoutStatusContainer" class="hidden mb-3">
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <i class="ph-bold ph-selection text-2xl text-purple-600 animate-pulse"></i>
+                                <span id="cutoutStatusText" class="text-purple-700 font-medium">Ready for screen capture</span>
+                            </div>
+                            <p class="text-xs text-purple-500">Click "Start Capture" then select the area with the QR code</p>
+                            <div class="flex gap-2 justify-center mt-3">
+                                <button type="button" onclick="captureScreen()" id="captureStartBtn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                    <i class="ph-bold ph-crosshair"></i>
+                                    Start Capture
+                                </button>
+                                <button type="button" onclick="cancelCutout()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <div id="cutoutPreview" class="hidden mt-3">
+                            <img id="cutoutPreviewImg" class="max-w-full rounded-lg border border-gray-200" alt="Captured screenshot">
+                        </div>
                     </div>
                     
                     <!-- Manual Entry Fields -->
@@ -731,6 +760,7 @@
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
             stopQrScanner();
+            cancelCutout();
         }
 
         // ============ QR SCANNER FUNCTIONS ============
@@ -885,6 +915,175 @@
             document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
             
             showToast('LPA code built successfully!');
+        }
+
+        // ============ SCREEN CUTOUT FUNCTIONS ============
+        
+        let cutoutActive = false;
+        let mediaStream = null;
+
+        function startScreenCutout() {
+            const container = document.getElementById('cutoutStatusContainer');
+            const btn = document.getElementById('cutoutBtn');
+            const btnText = document.getElementById('cutoutBtnText');
+            
+            if (cutoutActive) {
+                cancelCutout();
+                return;
+            }
+            
+            // Show the cutout status container
+            container.classList.remove('hidden');
+            btn.classList.add('bg-purple-600', 'text-white');
+            btn.classList.remove('bg-purple-100', 'text-purple-700');
+            btnText.textContent = 'Cancel Cutout';
+            cutoutActive = true;
+            
+            // Update status
+            document.getElementById('cutoutStatusText').textContent = 'Ready for screen capture';
+            document.getElementById('cutoutPreview').classList.add('hidden');
+        }
+
+        function cancelCutout() {
+            const container = document.getElementById('cutoutStatusContainer');
+            const btn = document.getElementById('cutoutBtn');
+            const btnText = document.getElementById('cutoutBtnText');
+            
+            container.classList.add('hidden');
+            btn.classList.remove('bg-purple-600', 'text-white');
+            btn.classList.add('bg-purple-100', 'text-purple-700');
+            btnText.textContent = 'Screen Cutout';
+            cutoutActive = false;
+            
+            // Stop any active media stream
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        }
+
+        async function captureScreen() {
+            const statusText = document.getElementById('cutoutStatusText');
+            const captureBtn = document.getElementById('captureStartBtn');
+            const preview = document.getElementById('cutoutPreview');
+            const previewImg = document.getElementById('cutoutPreviewImg');
+            
+            try {
+                statusText.textContent = 'Select the screen/window to capture...';
+                captureBtn.disabled = true;
+                captureBtn.innerHTML = '<i class="ph-bold ph-circle-notch animate-spin"></i> Waiting...';
+                
+                // Request screen capture with display surface selection
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        displaySurface: 'monitor',
+                        cursor: 'never'
+                    },
+                    preferCurrentTab: false,
+                    selfBrowserSurface: 'exclude',
+                    systemAudio: 'exclude'
+                });
+                
+                // Create video element to capture frame
+                const video = document.createElement('video');
+                video.srcObject = mediaStream;
+                video.autoplay = true;
+                
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve();
+                    };
+                });
+                
+                // Small delay to ensure frame is rendered
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                statusText.textContent = 'Capturing screenshot...';
+                
+                // Capture the frame to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Stop the stream immediately after capture
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+                
+                // Convert to blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                
+                // Show preview
+                const imageUrl = URL.createObjectURL(blob);
+                previewImg.src = imageUrl;
+                preview.classList.remove('hidden');
+                
+                statusText.textContent = 'Processing QR code...';
+                
+                // Process the image for QR code
+                await processScreenshotForQR(blob);
+                
+            } catch (err) {
+                console.error('Screen capture error:', err);
+                if (err.name === 'NotAllowedError') {
+                    statusText.textContent = 'Screen capture was cancelled';
+                } else {
+                    statusText.textContent = 'Error: ' + (err.message || 'Could not capture screen');
+                }
+                statusText.classList.add('text-red-600');
+                setTimeout(() => {
+                    statusText.classList.remove('text-red-600');
+                }, 3000);
+            } finally {
+                captureBtn.disabled = false;
+                captureBtn.innerHTML = '<i class="ph-bold ph-crosshair"></i> Start Capture';
+            }
+        }
+
+        async function processScreenshotForQR(blob) {
+            const statusText = document.getElementById('cutoutStatusText');
+            
+            try {
+                // Create a File object from the blob
+                const file = new File([blob], 'screenshot.png', { type: 'image/png' });
+                
+                // Use Html5Qrcode to scan the file
+                const tempScanner = new Html5Qrcode("qrReader");
+                const result = await tempScanner.scanFile(file, true);
+                
+                if (result.startsWith('LPA:')) {
+                    document.getElementById('lpaInput').value = result;
+                    statusText.textContent = '✓ LPA Code extracted from screenshot!';
+                    statusText.classList.add('text-green-600');
+                    showToast('QR Code scanned successfully!');
+                    
+                    // Auto-close after success
+                    setTimeout(() => {
+                        cancelCutout();
+                        statusText.classList.remove('text-green-600');
+                    }, 2000);
+                } else {
+                    // Found QR but not LPA
+                    statusText.textContent = 'QR code found but not an LPA code: ' + result.substring(0, 50);
+                    statusText.classList.add('text-yellow-600');
+                    setTimeout(() => {
+                        statusText.classList.remove('text-yellow-600');
+                    }, 3000);
+                }
+                
+                await tempScanner.clear();
+            } catch (err) {
+                console.error('QR scan error:', err);
+                statusText.textContent = 'No QR code found in screenshot. Try capturing a clearer image.';
+                statusText.classList.add('text-red-600');
+                setTimeout(() => {
+                    statusText.classList.remove('text-red-600');
+                    statusText.textContent = 'Ready for screen capture';
+                }, 3000);
+            }
         }
 
         // ============ SHORT URL FUNCTIONS ============

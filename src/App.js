@@ -17,7 +17,9 @@ import {
   MessageCircle,
   Settings,
   Clock,
-  Phone
+  Phone,
+  Crosshair,
+  ScreenShare
 } from 'lucide-react';
 import './App.css';
 
@@ -52,8 +54,12 @@ function App() {
   const [isResetting, setIsResetting] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [isDefaultPassword, setIsDefaultPassword] = useState(false);
+  const [cutoutActive, setCutoutActive] = useState(false);
+  const [cutoutStatus, setCutoutStatus] = useState('');
+  const [cutoutPreview, setCutoutPreview] = useState('');
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
+  const mediaStreamRef = useRef(null);
 
   // API Configuration
   const API_BASE = window.location.hostname === 'localhost' 
@@ -436,6 +442,142 @@ function App() {
     }
   };
 
+  // Screen Cutout Functions
+  const startScreenCutout = () => {
+    if (cutoutActive) {
+      cancelCutout();
+      return;
+    }
+    setCutoutActive(true);
+    setCutoutStatus('Click "Start Capture" then select the screen area with the QR code');
+    setCutoutPreview('');
+  };
+
+  const cancelCutout = () => {
+    setCutoutActive(false);
+    setCutoutStatus('');
+    setCutoutPreview('');
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+  };
+
+  const captureScreen = async () => {
+    setCutoutStatus('Select the screen/window to capture...');
+    
+    try {
+      mediaStreamRef.current = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          displaySurface: 'monitor',
+          cursor: 'never'
+        },
+        preferCurrentTab: false,
+        selfBrowserSurface: 'exclude',
+        systemAudio: 'exclude'
+      });
+
+      // Create video element to capture frame
+      const video = document.createElement('video');
+      video.srcObject = mediaStreamRef.current;
+      video.autoplay = true;
+
+      // Wait for video to be ready
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+          video.play();
+          resolve();
+        };
+      });
+
+      // Small delay to ensure frame is rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      setCutoutStatus('Capturing screenshot...');
+
+      // Capture the frame to canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+
+      // Stop the stream immediately after capture
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+
+      // Convert to blob
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+      // Show preview
+      const imageUrl = URL.createObjectURL(blob);
+      setCutoutPreview(imageUrl);
+
+      setCutoutStatus('Processing QR code...');
+
+      // Process the image for QR code
+      await processScreenshotForQR(blob);
+
+    } catch (err) {
+      console.error('Screen capture error:', err);
+      if (err.name === 'NotAllowedError') {
+        setCutoutStatus('Screen capture was cancelled');
+      } else {
+        setCutoutStatus('Error: ' + (err.message || 'Could not capture screen'));
+      }
+      setTimeout(() => {
+        setCutoutStatus('Click "Start Capture" to try again');
+      }, 3000);
+    }
+  };
+
+  const processScreenshotForQR = async (blob) => {
+    try {
+      // Create a File object from the blob
+      const file = new File([blob], 'screenshot.png', { type: 'image/png' });
+
+      // Use Html5Qrcode to scan the file
+      const tempScanner = new Html5Qrcode("file-reader");
+      const result = await tempScanner.scanFile(file, true);
+
+      if (result.startsWith('LPA:')) {
+        setLpaCode(result);
+        setCutoutStatus('✓ LPA Code extracted from screenshot!');
+        
+        // Auto-convert
+        const parsed = parseLpaCode(result);
+        if (parsed) {
+          const link = generateLink(parsed);
+          setGeneratedLink(link);
+          QRCode.toDataURL(link, {
+            width: 256,
+            margin: 2,
+            color: { dark: '#1e293b', light: '#ffffff' }
+          }).then(setQrCodeDataUrl).catch(console.error);
+          shortenLink(link);
+        }
+
+        // Auto-close after success
+        setTimeout(() => {
+          cancelCutout();
+        }, 2000);
+      } else {
+        setCutoutStatus('QR code found but not an LPA code: ' + result.substring(0, 50));
+        setTimeout(() => {
+          setCutoutStatus('Click "Start Capture" to try again');
+        }, 3000);
+      }
+
+      await tempScanner.clear();
+    } catch (err) {
+      console.error('QR scan error:', err);
+      setCutoutStatus('No QR code found in screenshot. Try capturing a clearer image.');
+      setTimeout(() => {
+        setCutoutStatus('Click "Start Capture" to try again');
+      }, 3000);
+    }
+  };
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(generatedLink);
@@ -779,7 +921,39 @@ function App() {
                   hidden 
                 />
               </label>
+              <button 
+                className={`method-btn cutout-btn ${cutoutActive ? 'active' : ''}`}
+                onClick={startScreenCutout}
+              >
+                <ScreenShare size={18} />
+                {cutoutActive ? 'Cancel Cutout' : 'Screen Cutout'}
+              </button>
             </div>
+
+            {/* Screen Cutout Panel */}
+            {cutoutActive && (
+              <div className="cutout-panel">
+                <div className="cutout-status">
+                  <Crosshair size={20} className="cutout-icon" />
+                  <span>{cutoutStatus}</span>
+                </div>
+                <div className="cutout-actions">
+                  <button className="capture-btn" onClick={captureScreen}>
+                    <Crosshair size={18} />
+                    Start Capture
+                  </button>
+                  <button className="cancel-btn" onClick={cancelCutout}>
+                    <X size={18} />
+                    Cancel
+                  </button>
+                </div>
+                {cutoutPreview && (
+                  <div className="cutout-preview">
+                    <img src={cutoutPreview} alt="Captured screenshot" />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div id="file-reader" style={{ display: 'none' }}></div>
 
