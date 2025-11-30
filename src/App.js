@@ -43,6 +43,15 @@ function App() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [isDefaultPassword, setIsDefaultPassword] = useState(false);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
 
@@ -71,16 +80,22 @@ function App() {
     setIsLoggingIn(true);
 
     try {
-      const response = await fetch(`${API_BASE}/admin/login`, {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: 'admin', password: loginPassword })
       });
 
       if (response.ok) {
+        const data = await response.json();
         setIsAuthenticated(true);
         localStorage.setItem('ezrefill_webapp_auth', 'authenticated');
         setLoginPassword('');
+        // Check if using default password - prompt to change
+        if (data.isDefaultPassword) {
+          setIsDefaultPassword(true);
+          setShowChangePassword(true);
+        }
       } else {
         setLoginError('Incorrect password');
       }
@@ -88,6 +103,52 @@ function App() {
       setLoginError('Connection error. Please try again.');
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  // Reset password with security question
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+
+    if (newPassword !== confirmPassword) {
+      setResetError('Passwords do not match');
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setResetError('Password must be at least 4 characters');
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ securityAnswer, newPassword })
+      });
+
+      if (response.ok) {
+        setResetSuccess('Password reset successfully! You can now sign in.');
+        setSecurityAnswer('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setShowChangePassword(false);
+          setResetSuccess('');
+        }, 2000);
+      } else {
+        const data = await response.json();
+        setResetError(data.error || 'Failed to reset password');
+      }
+    } catch (err) {
+      setResetError('Connection error. Please try again.');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -479,6 +540,74 @@ function App() {
 
   // Login screen
   if (!isAuthenticated) {
+    // Forgot password form
+    if (showForgotPassword) {
+      return (
+        <div className="app">
+          <div className="container">
+            <div className="login-screen">
+              <div className="login-card">
+                <div className="login-logo">
+                  <Smartphone className="logo-icon" />
+                  <h1>EZRefill</h1>
+                </div>
+                <p className="login-subtitle">Reset Password</p>
+                <form onSubmit={handleResetPassword} className="login-form">
+                  <div className="input-group">
+                    <label htmlFor="security-answer">What is our UltraMobile dealer code?</label>
+                    <input
+                      type="text"
+                      id="security-answer"
+                      value={securityAnswer}
+                      onChange={(e) => setSecurityAnswer(e.target.value)}
+                      placeholder="Enter answer (all lowercase)"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="new-password">New Password</label>
+                    <input
+                      type="password"
+                      id="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password"
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label htmlFor="confirm-password">Confirm Password</label>
+                    <input
+                      type="password"
+                      id="confirm-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                  {resetError && <div className="error-message">{resetError}</div>}
+                  {resetSuccess && <div className="success-message">{resetSuccess}</div>}
+                  <button type="submit" className="primary-btn login-btn" disabled={isResetting}>
+                    {isResetting ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="secondary-btn" 
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetError('');
+                      setResetSuccess('');
+                    }}
+                  >
+                    Back to Sign In
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="app">
         <div className="container">
@@ -505,6 +634,81 @@ function App() {
                 <button type="submit" className="primary-btn login-btn" disabled={isLoggingIn}>
                   {isLoggingIn ? 'Signing in...' : 'Sign In'}
                 </button>
+                <button 
+                  type="button" 
+                  className="forgot-password-btn"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot Password?
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Change password modal (shown after login with default password)
+  if (showChangePassword) {
+    return (
+      <div className="app">
+        <div className="container">
+          <div className="login-screen">
+            <div className="login-card">
+              <div className="login-logo">
+                <Smartphone className="logo-icon" />
+                <h1>EZRefill</h1>
+              </div>
+              <p className="login-subtitle">
+                {isDefaultPassword ? 'Please set a new password' : 'Change Password'}
+              </p>
+              <form onSubmit={handleResetPassword} className="login-form">
+                <div className="input-group">
+                  <label htmlFor="security-answer">What is our UltraMobile dealer code?</label>
+                  <input
+                    type="text"
+                    id="security-answer"
+                    value={securityAnswer}
+                    onChange={(e) => setSecurityAnswer(e.target.value)}
+                    placeholder="Enter answer (all lowercase)"
+                    autoFocus
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="new-password">New Password</label>
+                  <input
+                    type="password"
+                    id="new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                  />
+                </div>
+                <div className="input-group">
+                  <label htmlFor="confirm-password">Confirm Password</label>
+                  <input
+                    type="password"
+                    id="confirm-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                  />
+                </div>
+                {resetError && <div className="error-message">{resetError}</div>}
+                {resetSuccess && <div className="success-message">{resetSuccess}</div>}
+                <button type="submit" className="primary-btn login-btn" disabled={isResetting}>
+                  {isResetting ? 'Saving...' : 'Set New Password'}
+                </button>
+                {!isDefaultPassword && (
+                  <button 
+                    type="button" 
+                    className="secondary-btn" 
+                    onClick={() => setShowChangePassword(false)}
+                  >
+                    Cancel
+                  </button>
+                )}
               </form>
             </div>
           </div>

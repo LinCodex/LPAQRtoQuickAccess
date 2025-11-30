@@ -48,12 +48,13 @@ module.exports = async function handler(req, res) {
           id: 'admin',
           username: 'admin',
           password: hashedPassword,
+          passwordSetByUser: false, // Default password, not set by user
           createdAt: new Date().toISOString()
         }));
         
         const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
         await redis.disconnect();
-        return res.status(200).json({ token, username: 'admin' });
+        return res.status(200).json({ token, username: 'admin', isDefaultPassword: true });
       }
       await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -61,14 +62,21 @@ module.exports = async function handler(req, res) {
 
     const user = JSON.parse(userData);
 
+    // If user has set their own password, don't allow default password
+    if (user.passwordSetByUser && password === 'admin123') {
+      await redis.disconnect();
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     if (!bcrypt.compareSync(password, user.password)) {
       await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+    const isDefaultPassword = !user.passwordSetByUser;
     await redis.disconnect();
-    return res.status(200).json({ token, username: user.username });
+    return res.status(200).json({ token, username: user.username, isDefaultPassword });
   } catch (error) {
     console.error('Login error:', error);
     if (redis) await redis.disconnect().catch(() => {});
