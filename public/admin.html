@@ -163,7 +163,13 @@
 
             <!-- Actions Bar -->
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-gray-900">Activations</h2>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-bold text-gray-900">Activations</h2>
+                    <div id="refreshIndicator" class="flex items-center gap-1.5 text-xs text-gray-400">
+                        <i class="ph-bold ph-arrows-clockwise" id="refreshIcon"></i>
+                        <span id="refreshStatus">Checking...</span>
+                    </div>
+                </div>
                 <button onclick="showCreateModal()" class="bg-black text-white px-4 py-2 rounded-xl font-medium text-sm hover:bg-gray-800 transition flex items-center gap-2">
                     <i class="ph-bold ph-plus"></i>
                     New Activation
@@ -235,6 +241,10 @@
                             Upload QR
                             <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrFileUpload(event)">
                         </label>
+                        <button type="button" onclick="toggleManualEntry()" id="manualEntryBtn" class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
+                            <i class="ph-bold ph-keyboard"></i>
+                            Manual Entry
+                        </button>
                     </div>
                     
                     <!-- QR Scanner Container -->
@@ -243,8 +253,23 @@
                         <div id="qrScannerStatus" class="text-center text-sm text-gray-500 mt-2">Point camera at LPA QR code</div>
                     </div>
                     
+                    <!-- Manual Entry Fields -->
+                    <div id="manualEntryContainer" class="hidden mb-3 space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">SMDP Address</label>
+                            <input type="text" id="smdpInput" placeholder="e.g. smdp.example.com" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Activation Code</label>
+                            <input type="text" id="activationCodeInput" placeholder="e.g. K2-ABC123-XYZ789" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm">
+                        </div>
+                        <button type="button" onclick="buildLpaFromManual()" class="w-full py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition">
+                            <i class="ph-bold ph-check"></i> Apply to LPA Code
+                        </button>
+                    </div>
+                    
                     <textarea id="lpaInput" rows="3" placeholder="LPA:1$smdp.example.com$ACTIVATION-CODE" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm resize-none"></textarea>
-                    <p class="text-xs text-gray-400 mt-1">Adding LPA code will set status to Active. Leave empty for Standby.</p>
+                    <p class="text-xs text-gray-400 mt-1">Use QR scanner, manual entry, or paste full LPA code directly.</p>
                 </div>
 
                 <div id="statusSection" class="hidden">
@@ -459,6 +484,13 @@
                     activations = await res.json();
                     renderActivations();
                     updateStats();
+                    // Start auto-refresh after initial load
+                    if (!countdownInterval) {
+                        startAutoRefresh();
+                    } else {
+                        // Update hash after manual refresh
+                        lastDataHash = hashData(activations);
+                    }
                 }
             } catch (e) {
                 console.error('Error loading activations:', e);
@@ -538,6 +570,11 @@
             document.getElementById('phoneInput').value = '';
             document.getElementById('notesInput').value = '';
             document.getElementById('lpaInput').value = '';
+            document.getElementById('smdpInput').value = '';
+            document.getElementById('activationCodeInput').value = '';
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
             document.getElementById('statusSection').classList.add('hidden');
             document.getElementById('linkPreview').classList.add('hidden');
             formStatus = 'standby';
@@ -554,6 +591,11 @@
             document.getElementById('phoneInput').value = activation.phoneNumber || '';
             document.getElementById('notesInput').value = activation.notes || '';
             document.getElementById('lpaInput').value = activation.lpaCode || '';
+            document.getElementById('smdpInput').value = '';
+            document.getElementById('activationCodeInput').value = '';
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
             document.getElementById('statusSection').classList.remove('hidden');
             document.getElementById('linkPreview').classList.remove('hidden');
             document.getElementById('linkDisplay').value = activation.shortUrl || getActivationLink(id);
@@ -672,6 +714,55 @@
                 container.classList.add('hidden');
                 status.classList.remove('text-green-600', 'text-red-600');
             }, 3000);
+        }
+
+        // ============ MANUAL ENTRY FUNCTIONS ============
+        
+        function toggleManualEntry() {
+            const container = document.getElementById('manualEntryContainer');
+            const btn = document.getElementById('manualEntryBtn');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+                
+                // Parse existing LPA code if present
+                const lpaInput = document.getElementById('lpaInput').value;
+                if (lpaInput.startsWith('LPA:')) {
+                    const parts = lpaInput.split('$');
+                    if (parts.length >= 2) {
+                        document.getElementById('smdpInput').value = parts[1] || '';
+                    }
+                    if (parts.length >= 3) {
+                        document.getElementById('activationCodeInput').value = parts[2] || '';
+                    }
+                }
+            } else {
+                container.classList.add('hidden');
+                btn.classList.remove('bg-blue-100', 'text-blue-700');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            }
+        }
+
+        function buildLpaFromManual() {
+            const smdp = document.getElementById('smdpInput').value.trim();
+            const activationCode = document.getElementById('activationCodeInput').value.trim();
+            
+            if (!smdp || !activationCode) {
+                alert('Please enter both SMDP Address and Activation Code');
+                return;
+            }
+            
+            const lpaCode = `LPA:1$${smdp}$${activationCode}`;
+            document.getElementById('lpaInput').value = lpaCode;
+            
+            // Hide manual entry and show success
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
+            
+            showToast('LPA code built successfully!');
         }
 
         // ============ SHORT URL FUNCTIONS ============
@@ -887,8 +978,79 @@
             }
         }
 
+        // ============ AUTO-REFRESH FUNCTIONS ============
+        
+        let lastDataHash = null;
+        let refreshCountdown = 5;
+        let refreshInterval = null;
+        let countdownInterval = null;
+
+        function hashData(data) {
+            return JSON.stringify(data);
+        }
+
+        async function checkForUpdates() {
+            if (!token) return;
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const newHash = hashData(data);
+                    
+                    if (lastDataHash !== null && lastDataHash !== newHash) {
+                        // Data changed - update UI
+                        document.getElementById('refreshStatus').textContent = 'Updated!';
+                        document.getElementById('refreshIcon').classList.add('text-green-500');
+                        activations = data;
+                        renderActivations();
+                        updateStats();
+                        setTimeout(() => {
+                            document.getElementById('refreshIcon').classList.remove('text-green-500');
+                        }, 1000);
+                    }
+                    lastDataHash = newHash;
+                }
+            } catch (e) {
+                console.error('Error checking for updates:', e);
+            }
+        }
+
+        function startAutoRefresh() {
+            // Initial hash
+            lastDataHash = hashData(activations);
+            
+            // Countdown timer
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    document.getElementById('refreshStatus').textContent = 'Checking...';
+                    document.getElementById('refreshIcon').style.animation = 'spin 1s linear infinite';
+                    checkForUpdates().then(() => {
+                        refreshCountdown = 5;
+                        document.getElementById('refreshIcon').style.animation = '';
+                        document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                    });
+                } else {
+                    document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                }
+            }, 1000);
+        }
+
+        function stopAutoRefresh() {
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
         // Initialize
         checkAuth();
     </script>
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </body>
 </html>

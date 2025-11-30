@@ -164,7 +164,7 @@ app.post('/api/admin/activations', (req, res, next) => {
     next();
   }
 }, (req, res) => {
-  const { phoneNumber, notes, lpaCode } = req.body;
+  const { phoneNumber, notes, lpaCode, status } = req.body;
   const activations = readActivations();
 
   // If LPA code is provided and no auth, reject
@@ -176,7 +176,7 @@ app.post('/api/admin/activations', (req, res, next) => {
     id: uuidv4().split('-')[0], // Short ID for easier sharing
     phoneNumber: phoneNumber || '',
     notes: notes || '',
-    status: lpaCode ? 'active' : 'standby',
+    status: status || 'standby',
     lpaCode: lpaCode || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

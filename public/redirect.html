@@ -78,6 +78,10 @@
             border-color: #000000;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="h-screen w-full flex flex-col overflow-hidden pb-safe pt-safe selection:bg-black selection:text-white">
@@ -123,6 +127,10 @@
             <div id="errorDiv" class="hidden mt-4 w-full bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm font-medium">
                 <i class="ph-bold ph-warning-circle mr-2"></i>
                 <span id="errorText">Invalid link. Please try again.</span>
+            </div>
+            <div id="refreshIndicator" class="hidden mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                <i class="ph-bold ph-arrows-clockwise" id="refreshIcon"></i>
+                <span id="refreshStatus">5s</span>
             </div>
         </div>
 
@@ -238,14 +246,63 @@
             zh: { title: 'iPhone 17 系列', region_na: '美版 (仅 eSIM)', region_hk: '港版 (双卡/实体卡)', storage_256: '256GB', storage_512: '512GB', model_pro: '17 Pro', model_max: '17 Pro Max', btn: '立即咨询' }
         };
 
+        // Auto-refresh variables
+        let currentTargetUrl = null;
+        let refreshCountdown = 5;
+        let countdownInterval = null;
+        const activationId = new URLSearchParams(window.location.search).get('id');
+
+        async function checkForUpdates() {
+            if (!activationId) return;
+            
+            try {
+                const res = await fetch(`/api/activations/${activationId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.lpaCode && data.lpaCode !== currentTargetUrl) {
+                        // LPA code changed - reload page
+                        window.location.reload();
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking for updates:', e);
+            }
+        }
+
+        function startAutoRefresh() {
+            const indicator = document.getElementById('refreshIndicator');
+            if (!indicator || !activationId) return;
+            
+            // Show the indicator
+            indicator.classList.remove('hidden');
+            
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    document.getElementById('refreshStatus').textContent = 'Checking...';
+                    document.getElementById('refreshIcon').style.animation = 'spin 1s linear infinite';
+                    checkForUpdates().then(() => {
+                        refreshCountdown = 5;
+                        document.getElementById('refreshIcon').style.animation = '';
+                        document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                    });
+                } else {
+                    document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                }
+            }, 1000);
+        }
+
         (function() {
             const params = new URLSearchParams(window.location.search);
             const targetUrl = params.get('url');
+            currentTargetUrl = targetUrl;
             const activateBtn = document.getElementById('activateBtn');
             const errorDiv = document.getElementById('errorDiv');
             if (!targetUrl) {
                 errorDiv.classList.remove('hidden');
                 activateBtn.classList.add('opacity-50', 'pointer-events-none');
+                // Start auto-refresh to check for LPA code updates
+                if (activationId) startAutoRefresh();
                 return;
             }
             activateBtn.href = targetUrl;

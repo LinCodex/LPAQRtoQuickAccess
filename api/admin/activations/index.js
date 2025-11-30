@@ -91,11 +91,12 @@ module.exports = async function handler(req, res) {
       redis = await getRedisClient();
       
       const id = uuidv4().split('-')[0];
+      const { status } = req.body || {};
       const activation = {
         id,
         phoneNumber: phoneNumber || '',
         notes: notes || '',
-        status: lpaCode ? 'active' : 'standby',
+        status: status || 'standby',
         lpaCode: lpaCode || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
