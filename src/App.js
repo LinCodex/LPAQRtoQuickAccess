@@ -525,27 +525,11 @@ function App() {
                 </button>
               </div>
 
-              {qrCodeDataUrl && (
-                <div className="qr-output">
-                  <p>QR code for Android & older iOS:</p>
-                  <img src={qrCodeDataUrl} alt="eSIM Activation QR Code" />
-                  <a 
-                    href={qrCodeDataUrl} 
-                    download="esim-activation-qr.png"
-                    className="download-btn"
-                  >
-                    <Download size={16} />
-                    Save QR Code
-                  </a>
-                </div>
-              )}
-
               <div className="info-box">
                 <h3>How to use:</h3>
                 <ul>
-                  <li><strong>iOS 17.4+:</strong> Tap "Install eSIM Now" or share the link</li>
-                  <li><strong>Android:</strong> Scan the QR code in Settings → Network → eSIM</li>
-                  <li><strong>Older iOS:</strong> Scan the QR code with Camera app</li>
+                  <li><strong>iOS 17.4+:</strong> Tap "Share to WeChat" and send the link to yourself or others</li>
+                  <li><strong>WeChat:</strong> Open the link in WeChat to activate eSIM directly</li>
                 </ul>
               </div>
             </section>
