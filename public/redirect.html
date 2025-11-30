@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EZRefill">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <title>EzRefill eSIM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -104,7 +107,17 @@
                 </div>
             </div>
             <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-2">eSIM Activation</h2>
-            <p id="txt-act-desc" class="text-sm text-gray-500 mb-6 leading-relaxed max-w-[260px] font-medium">One tap to download your profile.</p>
+            <p id="txt-act-desc" class="text-sm text-gray-500 mb-4 leading-relaxed max-w-[260px] font-medium">One tap to download your profile.</p>
+            
+            <div id="instructions" class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
+                <p class="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5"><i class="ph-bold ph-info"></i> <span id="txt-instr-title">Quick Instructions</span></p>
+                <ol class="text-xs text-blue-700 space-y-1.5 list-decimal list-inside leading-relaxed">
+                    <li id="txt-instr-1">Click the <strong>Activate Now</strong> button below</li>
+                    <li id="txt-instr-2">Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong></li>
+                    <li id="txt-instr-3">Wait approximately <strong>1 minute</strong> for activation to complete</li>
+                </ol>
+                <p class="text-xs text-amber-700 mt-3 flex items-center gap-1.5 font-semibold"><i class="ph-bold ph-wifi-high"></i> <span id="txt-instr-wifi">Important: Stay connected to Wi-Fi during activation</span></p>
+            </div>
             <a id="activateBtn" href="#" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
                 <span id="btnText">Activate Now</span>
             </a>
@@ -198,8 +211,12 @@
         let currentLang = detectLanguage();
         let iphoneConfig = { region: 'na', model: 'pro', storage: '256' };
         const uiText = {
-            'en': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': '中文', 'txt-act-title': 'eSIM Activation', 'txt-act-desc': 'One tap to download your profile.', 'btnText': 'Activate Now', 'txt-shop-title': 'Store Offerings', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': 'In Stock', 'txt-p2-title': 'Accessories', 'txt-p2-sub': 'Cables, Audio & More', 'txt-p3-title': 'Global Data', 'txt-p3-sub': 'China & More', 'txt-p4-title': 'Contact Us', 'txt-p4-sub': 'Visit Store', 'errorText': 'Invalid link. Please try again.' },
-            'zh': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': 'English', 'txt-act-title': 'eSIM 激活', 'txt-act-desc': '一键下载您的 eSIM 配置文件。', 'btnText': '立即激活', 'txt-shop-title': '精选商品', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': '现货供应', 'txt-p2-title': '精选配件', 'txt-p2-sub': '数据线，耳机等', 'txt-p3-title': '全球流量', 'txt-p3-sub': '中国与全球套餐', 'txt-p4-title': '联系我们', 'txt-p4-sub': '门店地址', 'errorText': '链接无效，请返回重试' }
+            'en': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': '中文', 'txt-act-title': 'eSIM Activation', 'txt-act-desc': 'One tap to download your profile.', 'btnText': 'Activate Now', 'txt-shop-title': 'Store Offerings', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': 'In Stock', 'txt-p2-title': 'Accessories', 'txt-p2-sub': 'Cables, Audio & More', 'txt-p3-title': 'Global Data', 'txt-p3-sub': 'China & More', 'txt-p4-title': 'Contact Us', 'txt-p4-sub': 'Visit Store', 'errorText': 'Invalid link. Please try again.', 'txt-instr-title': 'Quick Instructions', 'txt-instr-wifi': 'Important: Stay connected to Wi-Fi during activation' },
+            'zh': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': 'English', 'txt-act-title': 'eSIM 激活', 'txt-act-desc': '一键下载您的 eSIM 配置文件。', 'btnText': '立即激活', 'txt-shop-title': '精选商品', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': '现货供应', 'txt-p2-title': '精选配件', 'txt-p2-sub': '数据线，耳机等', 'txt-p3-title': '全球流量', 'txt-p3-sub': '中国与全球套餐', 'txt-p4-title': '联系我们', 'txt-p4-sub': '门店地址', 'errorText': '链接无效，请返回重试', 'txt-instr-title': '操作指南', 'txt-instr-wifi': '重要提示：激活期间请保持 Wi-Fi 连接' }
+        };
+        const instructionsText = {
+            'en': ['Click the <strong>Activate Now</strong> button below', 'Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong>', 'Wait approximately <strong>1 minute</strong> for activation to complete'],
+            'zh': ['点击下方 <strong>立即激活</strong> 按钮', '跳转到 iPhone SIM 激活页面后，点击 <strong>激活</strong>', '等待约 <strong>1 分钟</strong> 完成激活']
         };
         const accessoriesList = [
             { en: 'Charging Cable', zh: '充电数据线', icon: 'ph-plugs' },
@@ -244,15 +261,16 @@
                 const el = document.getElementById(id);
                 if (el) el.innerText = text;
             }
+            // Update instruction list items
+            const instr = instructionsText[lang];
+            document.getElementById('txt-instr-1').innerHTML = instr[0];
+            document.getElementById('txt-instr-2').innerHTML = instr[1];
+            document.getElementById('txt-instr-3').innerHTML = instr[2];
         }
 
         function toggleLanguage() {
             currentLang = currentLang === 'en' ? 'zh' : 'en';
-            const texts = uiText[currentLang];
-            for (const [id, text] of Object.entries(texts)) {
-                const el = document.getElementById(id);
-                if (el) el.innerText = text;
-            }
+            applyLanguage(currentLang);
         }
 
         function getIphonePrice() {
