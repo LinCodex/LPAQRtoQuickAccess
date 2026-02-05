@@ -345,7 +345,8 @@
                 <div class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
                     <ol class="text-sm text-blue-700 space-y-3 list-decimal list-inside leading-relaxed">
                         <li id="instr-step-1">Once redirected to iPhone SIM activation screen, tap
-                            <strong>Activate</strong></li>
+                            <strong>Activate</strong>
+                        </li>
                         <li id="instr-step-2">Wait approximately <strong>1 minute</strong> for activation to complete
                         </li>
                     </ol>
@@ -373,10 +374,10 @@
     </div>
 
     <script>
-        // API Configuration
+        // API Configuration - use relative URL in production to avoid www/non-www CORS issues
         const API_BASE = window.location.hostname === 'localhost'
             ? 'http://localhost:3001/api'
-            : 'https://ezrefillny.net/api';
+            : '/api';
 
         // Auto-detect language
         function detectLanguage() {

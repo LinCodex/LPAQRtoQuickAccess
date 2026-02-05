@@ -61,10 +61,10 @@ function App() {
   const scannerInitialized = useRef(false);
   const mediaStreamRef = useRef(null);
 
-  // API Configuration
+  // API Configuration - use relative URL in production to avoid www/non-www CORS issues
   const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:3001/api'
-    : 'https://ezrefillny.net/api';
+    : '/api';
 
   // Create short link from LPA code
   const createShortLink = async (lpaCode) => {
