@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eSIM Activation | EZ Refill</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #fbbf24;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status {
+            font-size: 18px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            border: 1px solid #dc2626;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .error h2 {
+            color: #fca5a5;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .error p {
+            color: #fecaca;
+            font-size: 14px;
+        }
+
+        .manual-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #1e293b;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .manual-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">EZ Refill</div>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <p class="status">Loading eSIM activation...</p>
+        </div>
+
+        <div id="error" class="error hidden">
+            <h2>Link Not Found</h2>
+            <p id="error-message">This link may have expired or is invalid.</p>
+            <a href="/" class="manual-btn">Go Home</a>
+        </div>
+
+        <div id="redirect" class="hidden">
+            <p class="status">Redirecting to eSIM setup...</p>
+            <a id="manual-link" href="#" class="manual-btn">Tap here if not redirected</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:3001/api'
+            : '/api';
+
+        async function loadShortLink() {
+            // Get ID from URL path: /s/abc123 -> abc123
+            const pathParts = window.location.pathname.split('/');
+            const id = pathParts[pathParts.length - 1];
+
+            if (!id || id === 's') {
+                showError('No link ID provided');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/shortlink/${id}`);
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showError(data.error || 'Link not found');
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Show redirect state
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('redirect').classList.remove('hidden');
+                document.getElementById('manual-link').href = data.activationUrl;
+
+                // Auto-redirect
+                setTimeout(() => {
+                    window.location.href = data.activationUrl;
+                }, 500);
+
+            } catch (error) {
+                console.error('Error loading short link:', error);
+                showError('Failed to load link');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+
+        // Load on page ready
+        loadShortLink();
+    </script>
+</body>
+
+</html>

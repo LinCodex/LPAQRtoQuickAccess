@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EzRefill Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(40px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        .status-standby {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-processing {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-8 w-full max-w-md">
+            <!-- Back Button -->
+            <a href="/"
+                class="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 text-sm font-medium transition">
+                <i class="ph-bold ph-arrow-left"></i>
+                Back to App
+            </a>
+
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-sim-card text-3xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">EzRefill Admin</h1>
+                <p class="text-gray-500 text-sm mt-1">Sign in to manage activations</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div id="loginError" class="hidden text-red-600 text-sm text-center"></div>
+                <button type="submit"
+                    class="w-full bg-black text-white py-3 rounded-xl font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                    <span>Sign In</span>
+                    <i class="ph-bold ph-sign-in"></i>
+                </button>
+                <button type="button" onclick="showForgotPassword()"
+                    class="w-full text-blue-600 text-sm font-medium hover:underline mt-2">
+                    Forgot Password?
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-key text-3xl text-blue-600"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900">Reset Password</h2>
+                <p class="text-gray-500 text-sm mt-2">Answer the security question to reset your password.</p>
+            </div>
+            <form id="forgotPasswordForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">What is our UltraMobile dealer
+                        code?</label>
+                    <input type="text" id="securityAnswer" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition"
+                        placeholder="Enter answer (all lowercase)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input type="password" id="resetNewPassword" required minlength="4"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition"
+                        placeholder="Min 4 characters">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input type="password" id="resetConfirmPassword" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div id="resetError" class="hidden text-red-600 text-sm text-center"></div>
+                <div id="resetSuccess" class="hidden text-green-600 text-sm text-center bg-green-50 p-3 rounded-xl">
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="hideForgotPassword()"
+                        class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition">Reset
+                        Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph-fill ph-warning text-3xl text-yellow-600"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900">Change Default Password</h2>
+                <p class="text-gray-500 text-sm mt-2">You're using the default password. Please change it for security.
+                </p>
+            </div>
+            <form id="changePasswordForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">What is our UltraMobile dealer
+                        code?</label>
+                    <input type="text" id="changeSecurityAnswer" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition"
+                        placeholder="Enter answer (all lowercase)">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input type="password" id="newPassword" required minlength="4"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition"
+                        placeholder="Min 4 characters">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                </div>
+                <div id="passwordError" class="hidden text-red-600 text-sm text-center"></div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="skipPasswordChange()"
+                        class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Skip
+                        for now</button>
+                    <button type="submit"
+                        class="flex-1 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition">Change
+                        Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
+                        <i class="ph-fill ph-sim-card text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-900">EzRefill Admin</h1>
+                        <p class="text-xs text-gray-500">Activation Management</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="userDisplay" class="text-sm text-gray-600"></span>
+                    <button onclick="logout()"
+                        class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
+                        <i class="ph-bold ph-sign-out mr-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-6xl mx-auto px-4 py-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-list-numbers text-xl text-gray-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-gray-900" id="statTotal">0</p>
+                            <p class="text-xs text-gray-500">Total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-hourglass-medium text-xl text-yellow-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-yellow-600" id="statStandby">0</p>
+                            <p class="text-xs text-gray-500">Standby</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-circle-notch text-xl text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-blue-600" id="statProcessing">0</p>
+                            <p class="text-xs text-gray-500">Processing</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-2xl p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-check-circle text-xl text-green-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-green-600" id="statActive">0</p>
+                            <p class="text-xs text-gray-500">Active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-bold text-gray-900">Activations</h2>
+                    <div id="refreshIndicator" class="flex items-center gap-1.5 text-xs text-gray-400">
+                        <i class="ph-bold ph-arrows-clockwise" id="refreshIcon"></i>
+                        <span id="refreshStatus">Checking...</span>
+                    </div>
+                </div>
+                <button onclick="showCreateModal()"
+                    class="bg-black text-white px-4 py-2 rounded-xl font-medium text-sm hover:bg-gray-800 transition flex items-center gap-2">
+                    <i class="ph-bold ph-plus"></i>
+                    New Activation
+                </button>
+            </div>
+
+            <!-- Activations List -->
+            <div class="glass-panel rounded-2xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">ID / Link
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Phone</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">LPA Code
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created
+                                </th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="activationsList" class="divide-y divide-gray-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <i class="ph-duotone ph-sim-card text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 font-medium">No activations yet</p>
+                    <p class="text-gray-400 text-sm">Create your first activation to get started</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="modalTitle" class="text-xl font-bold text-gray-900">New Activation</h2>
+                <button onclick="closeModal()"
+                    class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center">
+                    <i class="ph-bold ph-x text-gray-500"></i>
+                </button>
+            </div>
+            <form id="activationForm" class="space-y-4">
+                <input type="hidden" id="editId">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input type="text" id="phoneInput" placeholder="e.g. 718-555-1234"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition">
+                    <p class="text-xs text-gray-400 mt-1">Customer's phone number for tracking</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea id="notesInput" rows="2" placeholder="Optional notes..."
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition resize-none"></textarea>
+                </div>
+
+                <div id="lpaSection">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">LPA Code</label>
+
+                    <!-- QR Scanner Toggle -->
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button type="button" onclick="toggleQrScanner()" id="qrScanBtn"
+                            class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
+                            <i class="ph-bold ph-qr-code"></i>
+                            <span id="qrScanBtnText">Scan QR Code</span>
+                        </button>
+                        <label
+                            class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition cursor-pointer">
+                            <i class="ph-bold ph-upload"></i>
+                            Upload QR
+                            <input type="file" id="qrFileInput" accept="image/*" class="hidden"
+                                onchange="handleQrFileUpload(event)">
+                        </label>
+                        <button type="button" onclick="startScreenCutout()" id="cutoutBtn"
+                            class="flex items-center gap-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 rounded-lg text-sm font-medium text-purple-700 transition">
+                            <i class="ph-bold ph-selection"></i>
+                            <span id="cutoutBtnText">Screen Cutout</span>
+                        </button>
+                        <button type="button" onclick="toggleManualEntry()" id="manualEntryBtn"
+                            class="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition">
+                            <i class="ph-bold ph-keyboard"></i>
+                            Manual Entry
+                        </button>
+                    </div>
+
+                    <!-- QR Scanner Container -->
+                    <div id="qrScannerContainer" class="hidden mb-3">
+                        <div id="qrReader" class="rounded-xl overflow-hidden"></div>
+                        <div id="qrScannerStatus" class="text-center text-sm text-gray-500 mt-2">Point camera at LPA QR
+                            code</div>
+                    </div>
+
+                    <!-- Screen Cutout Status Container -->
+                    <div id="cutoutStatusContainer" class="hidden mb-3">
+                        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <i class="ph-bold ph-selection text-2xl text-purple-600 animate-pulse"></i>
+                                <span id="cutoutStatusText" class="text-purple-700 font-medium">Ready for screen
+                                    capture</span>
+                            </div>
+                            <p class="text-xs text-purple-500">Click "Start Capture" then select the area with the QR
+                                code</p>
+                            <div class="flex gap-2 justify-center mt-3">
+                                <button type="button" onclick="captureScreen()" id="captureStartBtn"
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                    <i class="ph-bold ph-crosshair"></i>
+                                    Start Capture
+                                </button>
+                                <button type="button" onclick="cancelCutout()"
+                                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <div id="cutoutPreview" class="hidden mt-3">
+                            <img id="cutoutPreviewImg" class="max-w-full rounded-lg border border-gray-200"
+                                alt="Captured screenshot">
+                        </div>
+                    </div>
+
+                    <!-- Manual Entry Fields -->
+                    <div id="manualEntryContainer" class="hidden mb-3 space-y-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">SMDP Address</label>
+                            <input type="text" id="smdpInput" placeholder="e.g. smdp.example.com"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Activation Code</label>
+                            <input type="text" id="activationCodeInput" placeholder="e.g. K2-ABC123-XYZ789"
+                                class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm">
+                        </div>
+                        <button type="button" onclick="buildLpaFromManual()"
+                            class="w-full py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition">
+                            <i class="ph-bold ph-check"></i> Apply to LPA Code
+                        </button>
+                    </div>
+
+                    <textarea id="lpaInput" rows="3" placeholder="LPA:1$smdp.example.com$ACTIVATION-CODE"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-black focus:ring-2 focus:ring-black/10 outline-none transition font-mono text-sm resize-none"></textarea>
+                    <p class="text-xs text-gray-400 mt-1">Use QR scanner, manual entry, or paste full LPA code directly.
+                    </p>
+                </div>
+
+                <div id="statusSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="setFormStatus('standby')" id="btnStandby"
+                            class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Standby</button>
+                        <button type="button" onclick="setFormStatus('processing')" id="btnProcessing"
+                            class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Processing</button>
+                        <button type="button" onclick="setFormStatus('active')" id="btnActive"
+                            class="flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition">Active</button>
+                    </div>
+                </div>
+
+                <div id="linkPreview" class="hidden bg-gray-50 rounded-xl p-4 space-y-3">
+                    <div id="shortLinkSection" class="hidden">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Short Link</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="shortLinkDisplay" readonly
+                                class="flex-1 px-3 py-2 bg-white rounded-lg border border-green-300 text-sm font-mono text-green-700">
+                            <button type="button" onclick="copyShortLink()"
+                                class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                                <i class="ph-bold ph-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Full Link</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="linkDisplay" readonly
+                                class="flex-1 px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm font-mono text-gray-600">
+                            <button type="button" onclick="copyLink()"
+                                class="px-3 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                                <i class="ph-bold ph-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeModal()"
+                        class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                    <button type="submit"
+                        class="flex-1 py-3 rounded-xl bg-black text-white font-medium hover:bg-gray-800 transition flex items-center justify-center gap-2">
+                        <span id="submitBtnText">Create</span>
+                        <i class="ph-bold ph-check"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel rounded-3xl p-6 w-full max-w-sm text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph-fill ph-trash text-3xl text-red-600"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Delete Activation?</h2>
+            <p class="text-gray-500 text-sm mb-6">This action cannot be undone. The customer link will stop working.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()"
+                    class="flex-1 py-3 rounded-xl border border-gray-200 font-medium text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                <button onclick="confirmDelete()"
+                    class="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:3001/api'
+            : 'https://ezrefillny.net/api';
+
+        let token = localStorage.getItem('ezrefill_token');
+        let activations = [];
+        let deleteId = null;
+        let formStatus = 'standby';
+        let isDefaultPassword = false;
+        let currentUsername = '';
+        let html5QrCode = null;
+        let qrScannerActive = false;
+
+
+
+        // Check auth on load
+        async function checkAuth() {
+            if (!token) {
+                showLogin();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    showDashboard(data.username);
+                } else {
+                    localStorage.removeItem('ezrefill_token');
+                    showLogin();
+                }
+            } catch (e) {
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+
+        function showDashboard(username) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('userDisplay').textContent = username;
+            loadActivations();
+        }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('loginError');
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    token = data.token;
+                    currentUsername = data.username;
+                    localStorage.setItem('ezrefill_token', token);
+
+                    // Check if using default password
+                    if (password === 'Aa13678!') {
+                        isDefaultPassword = true;
+                        showPasswordChangeModal();
+                    } else {
+                        showDashboard(data.username);
+                    }
+                } else {
+                    errorEl.textContent = 'Invalid username or password';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        // Show password change modal
+        function showPasswordChangeModal() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+        }
+
+        // Skip password change
+        function skipPasswordChange() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            showDashboard(currentUsername);
+        }
+
+        // Show forgot password modal
+        function showForgotPassword() {
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+        }
+
+        // Hide forgot password modal
+        function hideForgotPassword() {
+            document.getElementById('forgotPasswordModal').classList.add('hidden');
+            document.getElementById('securityAnswer').value = '';
+            document.getElementById('resetNewPassword').value = '';
+            document.getElementById('resetConfirmPassword').value = '';
+            document.getElementById('resetError').classList.add('hidden');
+            document.getElementById('resetSuccess').classList.add('hidden');
+        }
+
+        // Forgot password form submission
+        document.getElementById('forgotPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const securityAnswer = document.getElementById('securityAnswer').value;
+            const newPassword = document.getElementById('resetNewPassword').value;
+            const confirmPassword = document.getElementById('resetConfirmPassword').value;
+            const errorEl = document.getElementById('resetError');
+            const successEl = document.getElementById('resetSuccess');
+
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            if (newPassword !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            if (newPassword.length < 4) {
+                errorEl.textContent = 'Password must be at least 4 characters';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ securityAnswer, newPassword })
+                });
+
+                if (res.ok) {
+                    successEl.textContent = 'Password reset successfully! You can now sign in.';
+                    successEl.classList.remove('hidden');
+                    setTimeout(() => {
+                        hideForgotPassword();
+                    }, 2000);
+                } else {
+                    const data = await res.json();
+                    errorEl.textContent = data.error || 'Failed to reset password';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        // Change password form
+        document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const securityAnswer = document.getElementById('changeSecurityAnswer').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorEl = document.getElementById('passwordError');
+
+            errorEl.classList.add('hidden');
+
+            if (newPassword !== confirmPassword) {
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            if (newPassword.length < 4) {
+                errorEl.textContent = 'Password must be at least 4 characters';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ securityAnswer, newPassword })
+                });
+
+                if (res.ok) {
+                    document.getElementById('changePasswordModal').classList.add('hidden');
+                    isDefaultPassword = false;
+                    showDashboard(currentUsername);
+                    alert('Password changed successfully!');
+                } else {
+                    const data = await res.json();
+                    errorEl.textContent = data.error || 'Failed to change password';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.remove('hidden');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('ezrefill_token');
+            token = null;
+            showLogin();
+        }
+
+        // Load activations
+        async function loadActivations() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    activations = await res.json();
+                    renderActivations();
+                    updateStats();
+                    // Start auto-refresh after initial load
+                    if (!countdownInterval) {
+                        startAutoRefresh();
+                    } else {
+                        // Update hash after manual refresh
+                        lastDataHash = hashData(activations);
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading activations:', e);
+            }
+        }
+
+        function renderActivations() {
+            const list = document.getElementById('activationsList');
+            const empty = document.getElementById('emptyState');
+
+            if (activations.length === 0) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            list.innerHTML = activations.map(a => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-4 py-3">
+                        <div class="font-mono text-sm font-medium text-gray-900">${a.id}</div>
+                        <button onclick="copyActivationLink('${a.id}')" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1">
+                            <i class="ph-bold ph-copy"></i> Copy Link
+                        </button>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-sm text-gray-600">${a.phoneNumber || '-'}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold status-${a.status}">
+                            ${a.status.charAt(0).toUpperCase() + a.status.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs font-mono text-gray-500 truncate block max-w-[200px]" title="${a.lpaCode || ''}">
+                            ${a.lpaCode ? (a.lpaCode.substring(0, 30) + '...') : '-'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-sm text-gray-500">${formatDate(a.createdAt)}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="editActivation('${a.id}')" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Edit">
+                            <i class="ph-bold ph-pencil text-gray-500"></i>
+                        </button>
+                        <button onclick="showDeleteModal('${a.id}')" class="p-2 hover:bg-red-50 rounded-lg transition" title="Delete">
+                            <i class="ph-bold ph-trash text-red-500"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = activations.length;
+            document.getElementById('statStandby').textContent = activations.filter(a => a.status === 'standby').length;
+            document.getElementById('statProcessing').textContent = activations.filter(a => a.status === 'processing').length;
+            document.getElementById('statActive').textContent = activations.filter(a => a.status === 'active').length;
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Modal functions
+        function showCreateModal() {
+            document.getElementById('modalTitle').textContent = 'New Activation';
+            document.getElementById('submitBtnText').textContent = 'Create';
+            document.getElementById('editId').value = '';
+            document.getElementById('phoneInput').value = '';
+            document.getElementById('notesInput').value = '';
+            document.getElementById('lpaInput').value = '';
+            document.getElementById('smdpInput').value = '';
+            document.getElementById('activationCodeInput').value = '';
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
+            document.getElementById('statusSection').classList.add('hidden');
+            document.getElementById('linkPreview').classList.add('hidden');
+            document.getElementById('shortLinkSection').classList.add('hidden');
+            formStatus = 'standby';
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function editActivation(id) {
+            const activation = activations.find(a => a.id === id);
+            if (!activation) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Activation';
+            document.getElementById('submitBtnText').textContent = 'Save';
+            document.getElementById('editId').value = id;
+            document.getElementById('phoneInput').value = activation.phoneNumber || '';
+            document.getElementById('notesInput').value = activation.notes || '';
+            document.getElementById('lpaInput').value = activation.lpaCode || '';
+            document.getElementById('smdpInput').value = '';
+            document.getElementById('activationCodeInput').value = '';
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
+            document.getElementById('statusSection').classList.remove('hidden');
+            document.getElementById('linkPreview').classList.remove('hidden');
+
+
+
+            formStatus = activation.status;
+            updateStatusButtons();
+
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            stopQrScanner();
+            cancelCutout();
+        }
+
+        // ============ QR SCANNER FUNCTIONS ============
+
+        function toggleQrScanner() {
+            if (qrScannerActive) {
+                stopQrScanner();
+            } else {
+                startQrScanner();
+            }
+        }
+
+        async function startQrScanner() {
+            const container = document.getElementById('qrScannerContainer');
+            const btn = document.getElementById('qrScanBtn');
+            const btnText = document.getElementById('qrScanBtnText');
+            const status = document.getElementById('qrScannerStatus');
+
+            container.classList.remove('hidden');
+            btnText.textContent = 'Stop Scanner';
+            btn.classList.add('bg-red-100', 'text-red-700');
+            btn.classList.remove('bg-gray-100', 'text-gray-700');
+
+            try {
+                html5QrCode = new Html5Qrcode("qrReader");
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    (decodedText) => {
+                        // QR code scanned successfully
+                        if (decodedText.startsWith('LPA:')) {
+                            document.getElementById('lpaInput').value = decodedText;
+                            status.textContent = '✓ LPA Code scanned successfully!';
+                            status.classList.add('text-green-600');
+                            stopQrScanner();
+                        }
+                    },
+                    (errorMessage) => {
+                        // Scan error - ignore, keep scanning
+                    }
+                );
+                qrScannerActive = true;
+                status.textContent = 'Point camera at LPA QR code';
+            } catch (err) {
+                console.error('QR Scanner error:', err);
+                status.textContent = 'Camera access denied or not available';
+                status.classList.add('text-red-600');
+                stopQrScanner();
+            }
+        }
+
+        function stopQrScanner() {
+            const container = document.getElementById('qrScannerContainer');
+            const btn = document.getElementById('qrScanBtn');
+            const btnText = document.getElementById('qrScanBtnText');
+            const status = document.getElementById('qrScannerStatus');
+
+            if (html5QrCode && qrScannerActive) {
+                html5QrCode.stop().catch(() => { });
+            }
+
+            container.classList.add('hidden');
+            btnText.textContent = 'Scan QR Code';
+            btn.classList.remove('bg-red-100', 'text-red-700');
+            btn.classList.add('bg-gray-100', 'text-gray-700');
+            status.classList.remove('text-green-600', 'text-red-600');
+            qrScannerActive = false;
+        }
+
+        async function handleQrFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('qrScannerStatus');
+            const container = document.getElementById('qrScannerContainer');
+            container.classList.remove('hidden');
+            status.textContent = 'Processing image...';
+
+            try {
+                const tempScanner = new Html5Qrcode("qrReader");
+                const result = await tempScanner.scanFile(file, true);
+
+                if (result.startsWith('LPA:')) {
+                    document.getElementById('lpaInput').value = result;
+                    status.textContent = '✓ LPA Code extracted from image!';
+                    status.classList.add('text-green-600');
+                } else {
+                    status.textContent = 'QR code found but not an LPA code';
+                    status.classList.add('text-red-600');
+                }
+
+                await tempScanner.clear();
+            } catch (err) {
+                status.textContent = 'Could not read QR code from image';
+                status.classList.add('text-red-600');
+            }
+
+            // Reset file input
+            event.target.value = '';
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                container.classList.add('hidden');
+                status.classList.remove('text-green-600', 'text-red-600');
+            }, 3000);
+        }
+
+        // ============ MANUAL ENTRY FUNCTIONS ============
+
+        function toggleManualEntry() {
+            const container = document.getElementById('manualEntryContainer');
+            const btn = document.getElementById('manualEntryBtn');
+
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btn.classList.add('bg-blue-100', 'text-blue-700');
+                btn.classList.remove('bg-gray-100', 'text-gray-700');
+
+                // Parse existing LPA code if present
+                const lpaInput = document.getElementById('lpaInput').value;
+                if (lpaInput.startsWith('LPA:')) {
+                    const parts = lpaInput.split('$');
+                    if (parts.length >= 2) {
+                        document.getElementById('smdpInput').value = parts[1] || '';
+                    }
+                    if (parts.length >= 3) {
+                        document.getElementById('activationCodeInput').value = parts[2] || '';
+                    }
+                }
+            } else {
+                container.classList.add('hidden');
+                btn.classList.remove('bg-blue-100', 'text-blue-700');
+                btn.classList.add('bg-gray-100', 'text-gray-700');
+            }
+        }
+
+        function buildLpaFromManual() {
+            const smdp = document.getElementById('smdpInput').value.trim();
+            const activationCode = document.getElementById('activationCodeInput').value.trim();
+
+            if (!smdp || !activationCode) {
+                alert('Please enter both SMDP Address and Activation Code');
+                return;
+            }
+
+            const lpaCode = `LPA:1$${smdp}$${activationCode}`;
+            document.getElementById('lpaInput').value = lpaCode;
+
+            // Hide manual entry and show success
+            document.getElementById('manualEntryContainer').classList.add('hidden');
+            document.getElementById('manualEntryBtn').classList.remove('bg-blue-100', 'text-blue-700');
+            document.getElementById('manualEntryBtn').classList.add('bg-gray-100', 'text-gray-700');
+
+            showToast('LPA code built successfully!');
+        }
+
+        // ============ SCREEN CUTOUT FUNCTIONS ============
+
+        let cutoutActive = false;
+        let mediaStream = null;
+
+        function startScreenCutout() {
+            const container = document.getElementById('cutoutStatusContainer');
+            const btn = document.getElementById('cutoutBtn');
+            const btnText = document.getElementById('cutoutBtnText');
+
+            if (cutoutActive) {
+                cancelCutout();
+                return;
+            }
+
+            // Show the cutout status container
+            container.classList.remove('hidden');
+            btn.classList.add('bg-purple-600', 'text-white');
+            btn.classList.remove('bg-purple-100', 'text-purple-700');
+            btnText.textContent = 'Cancel Cutout';
+            cutoutActive = true;
+
+            // Update status
+            document.getElementById('cutoutStatusText').textContent = 'Ready for screen capture';
+            document.getElementById('cutoutPreview').classList.add('hidden');
+        }
+
+        function cancelCutout() {
+            const container = document.getElementById('cutoutStatusContainer');
+            const btn = document.getElementById('cutoutBtn');
+            const btnText = document.getElementById('cutoutBtnText');
+
+            container.classList.add('hidden');
+            btn.classList.remove('bg-purple-600', 'text-white');
+            btn.classList.add('bg-purple-100', 'text-purple-700');
+            btnText.textContent = 'Screen Cutout';
+            cutoutActive = false;
+
+            // Stop any active media stream
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        }
+
+        async function captureScreen() {
+            const statusText = document.getElementById('cutoutStatusText');
+            const captureBtn = document.getElementById('captureStartBtn');
+            const preview = document.getElementById('cutoutPreview');
+            const previewImg = document.getElementById('cutoutPreviewImg');
+
+            try {
+                statusText.textContent = 'Select the screen/window to capture...';
+                captureBtn.disabled = true;
+                captureBtn.innerHTML = '<i class="ph-bold ph-circle-notch animate-spin"></i> Waiting...';
+
+                // Request screen capture with display surface selection
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        displaySurface: 'monitor',
+                        cursor: 'never'
+                    },
+                    preferCurrentTab: false,
+                    selfBrowserSurface: 'exclude',
+                    systemAudio: 'exclude'
+                });
+
+                // Create video element to capture frame
+                const video = document.createElement('video');
+                video.srcObject = mediaStream;
+                video.autoplay = true;
+
+                // Wait for video to be ready
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve();
+                    };
+                });
+
+                // Small delay to ensure frame is rendered
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                statusText.textContent = 'Capturing screenshot...';
+
+                // Capture the frame to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+
+                // Stop the stream immediately after capture
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+
+                // Convert to blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+                // Show preview
+                const imageUrl = URL.createObjectURL(blob);
+                previewImg.src = imageUrl;
+                preview.classList.remove('hidden');
+
+                statusText.textContent = 'Processing QR code...';
+
+                // Process the image for QR code
+                await processScreenshotForQR(blob);
+
+            } catch (err) {
+                console.error('Screen capture error:', err);
+                if (err.name === 'NotAllowedError') {
+                    statusText.textContent = 'Screen capture was cancelled';
+                } else {
+                    statusText.textContent = 'Error: ' + (err.message || 'Could not capture screen');
+                }
+                statusText.classList.add('text-red-600');
+                setTimeout(() => {
+                    statusText.classList.remove('text-red-600');
+                }, 3000);
+            } finally {
+                captureBtn.disabled = false;
+                captureBtn.innerHTML = '<i class="ph-bold ph-crosshair"></i> Start Capture';
+            }
+        }
+
+        async function processScreenshotForQR(blob) {
+            const statusText = document.getElementById('cutoutStatusText');
+
+            try {
+                // Create a File object from the blob
+                const file = new File([blob], 'screenshot.png', { type: 'image/png' });
+
+                // Use Html5Qrcode to scan the file
+                const tempScanner = new Html5Qrcode("qrReader");
+                const result = await tempScanner.scanFile(file, true);
+
+                if (result.startsWith('LPA:')) {
+                    document.getElementById('lpaInput').value = result;
+                    statusText.textContent = '✓ LPA Code extracted from screenshot!';
+                    statusText.classList.add('text-green-600');
+                    showToast('QR Code scanned successfully!');
+
+                    // Auto-close after success
+                    setTimeout(() => {
+                        cancelCutout();
+                        statusText.classList.remove('text-green-600');
+                    }, 2000);
+                } else {
+                    // Found QR but not LPA
+                    statusText.textContent = 'QR code found but not an LPA code: ' + result.substring(0, 50);
+                    statusText.classList.add('text-yellow-600');
+                    setTimeout(() => {
+                        statusText.classList.remove('text-yellow-600');
+                    }, 3000);
+                }
+
+                await tempScanner.clear();
+            } catch (err) {
+                console.error('QR scan error:', err);
+                statusText.textContent = 'No QR code found in screenshot. Try capturing a clearer image.';
+                statusText.classList.add('text-red-600');
+                setTimeout(() => {
+                    statusText.classList.remove('text-red-600');
+                    statusText.textContent = 'Ready for screen capture';
+                }, 3000);
+            }
+        }
+
+
+
+        function setFormStatus(status) {
+            formStatus = status;
+            updateStatusButtons();
+        }
+
+        function updateStatusButtons() {
+            ['standby', 'processing', 'active'].forEach(s => {
+                const btn = document.getElementById('btn' + s.charAt(0).toUpperCase() + s.slice(1));
+                if (s === formStatus) {
+                    btn.classList.add('bg-black', 'text-white', 'border-black');
+                    btn.classList.remove('border-gray-200', 'text-gray-600');
+                } else {
+                    btn.classList.remove('bg-black', 'text-white', 'border-black');
+                    btn.classList.add('border-gray-200', 'text-gray-600');
+                }
+            });
+        }
+
+        function getActivationLink(id) {
+            return `https://ezrefillny.net/activate?id=${id}`;
+        }
+
+        function copyActivationLink(id) {
+            navigator.clipboard.writeText(getActivationLink(id));
+            showToast('Link copied!');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            showToast('Short URL copied!');
+        }
+
+        function showToast(message) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium z-50 animate-fade-in';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Remove after 2 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+
+        function copyLink() {
+            const link = document.getElementById('linkDisplay').value;
+            navigator.clipboard.writeText(link);
+            showToast('Full link copied!');
+        }
+
+        function copyShortLink() {
+            const link = document.getElementById('shortLinkDisplay').value;
+            navigator.clipboard.writeText(link);
+            showToast('Short link copied!');
+        }
+
+        // Form submission
+        document.getElementById('activationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const editId = document.getElementById('editId').value;
+            const phoneNumber = document.getElementById('phoneInput').value;
+            const notes = document.getElementById('notesInput').value;
+            const lpaCode = document.getElementById('lpaInput').value;
+            const submitBtn = document.querySelector('#activationForm button[type="submit"]');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const originalText = submitBtnText.textContent;
+
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtnText.textContent = 'Creating...';
+
+            // Auto-set status to active if LPA code is provided
+            let statusToSend = formStatus;
+            if (lpaCode && lpaCode.trim()) {
+                statusToSend = 'active';
+            }
+
+            const body = { phoneNumber, notes, lpaCode, status: statusToSend };
+
+            try {
+                const url = editId
+                    ? `${API_BASE}/admin/activations/${editId}`
+                    : `${API_BASE}/admin/activations`;
+
+                const res = await fetch(url, {
+                    method: editId ? 'PUT' : 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // For new activations, show the activation link
+                    if (!editId) {
+                        const activationLink = getActivationLink(data.id);
+                        alert(`Activation created!\n\nActivation Link: ${activationLink}\n\n(Copied to clipboard)`);
+                        navigator.clipboard.writeText(activationLink);
+                    }
+
+                    closeModal();
+                    loadActivations();
+                }
+            } catch (e) {
+                console.error('Error saving activation:', e);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.textContent = originalText;
+            }
+        });
+
+        // Delete functions
+        function showDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        async function confirmDelete() {
+            if (!deleteId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations/${deleteId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    closeDeleteModal();
+                    loadActivations();
+                }
+            } catch (e) {
+                console.error('Error deleting activation:', e);
+            }
+        }
+
+        // ============ AUTO-REFRESH FUNCTIONS ============
+
+        let lastDataHash = null;
+        let refreshCountdown = 5;
+        let refreshInterval = null;
+        let countdownInterval = null;
+
+        function hashData(data) {
+            return JSON.stringify(data);
+        }
+
+        async function checkForUpdates() {
+            if (!token) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/activations`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const newHash = hashData(data);
+
+                    if (lastDataHash !== null && lastDataHash !== newHash) {
+                        // Data changed - update UI
+                        document.getElementById('refreshStatus').textContent = 'Updated!';
+                        document.getElementById('refreshIcon').classList.add('text-green-500');
+                        activations = data;
+                        renderActivations();
+                        updateStats();
+                        setTimeout(() => {
+                            document.getElementById('refreshIcon').classList.remove('text-green-500');
+                        }, 1000);
+                    }
+                    lastDataHash = newHash;
+                }
+            } catch (e) {
+                console.error('Error checking for updates:', e);
+            }
+        }
+
+        function startAutoRefresh() {
+            // Initial hash
+            lastDataHash = hashData(activations);
+
+            // Countdown timer
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    document.getElementById('refreshStatus').textContent = 'Checking...';
+                    document.getElementById('refreshIcon').style.animation = 'spin 1s linear infinite';
+                    checkForUpdates().then(() => {
+                        refreshCountdown = 5;
+                        document.getElementById('refreshIcon').style.animation = '';
+                        document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                    });
+                } else {
+                    document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                }
+            }, 1000);
+        }
+
+        function stopAutoRefresh() {
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+    <style>
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</body>
+
+</html>

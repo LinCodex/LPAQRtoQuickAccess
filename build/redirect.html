@@ -2,143 +2,411 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Opening eSIM Setup...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EZRefill">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <title>EzRefill eSIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #f8fafc;
-            padding: 20px;
+            font-family: 'Inter', -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+            background-color: #f2f2f7;
+            color: #1d1d1f;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+            -webkit-font-smoothing: antialiased;
         }
-        .container {
-            text-align: center;
-            max-width: 400px;
+        *::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(40px) saturate(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
         }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(96, 165, 250, 0.2);
-            border-top-color: #60a5fa;
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05);
+        }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-enter { opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .active-scale:active { transform: scale(0.95); }
+        @keyframes softPulse {
+            0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+            50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        }
+        .animate-soft-pulse { animation: softPulse 3s infinite ease-in-out; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 10%, #ffffff 0%, #f2f2f7 80%);
+        }
+        .orb {
+            position: absolute;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 24px;
+            filter: blur(80px);
+            opacity: 0.5;
+        }
+        .cfg-btn {
+            border: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #1f2937;
+            transition: all 0.2s ease;
+        }
+        .cfg-btn.selected {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         @keyframes spin {
+            from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
-        }
-        h1 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-        p {
-            color: #94a3b8;
-            font-size: 14px;
-            margin-bottom: 24px;
-            line-height: 1.5;
-        }
-        .btn {
-            display: inline-block;
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn:active {
-            transform: scale(0.98);
-        }
-        .note {
-            margin-top: 24px;
-            padding: 16px;
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.2);
-            border-radius: 10px;
-            font-size: 13px;
-            color: #94a3b8;
-        }
-        .error {
-            display: none;
-            margin-top: 20px;
-            padding: 16px;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 10px;
-            color: #fca5a5;
-            font-size: 13px;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="spinner"></div>
-        <h1>Opening eSIM Setup</h1>
-        <p>Redirecting to Safari to install your eSIM...</p>
-        
-        <a id="manualBtn" class="btn" href="#">Tap to Install eSIM</a>
-        
-        <div class="note">
-            <strong>Note:</strong> If you're in WeChat or another app, this will open Safari first to complete the eSIM installation.
+<body class="h-screen w-full flex flex-col overflow-hidden pb-safe pt-safe selection:bg-black selection:text-white">
+    <div class="mesh-bg">
+        <div class="orb w-80 h-80 bg-blue-100 top-[-50px] left-[-50px] animate-pulse opacity-60" style="animation-duration: 8s;"></div>
+        <div class="orb w-72 h-72 bg-purple-100 bottom-[10%] right-[-20px] animate-pulse opacity-60" style="animation-duration: 10s;"></div>
+        <div class="orb w-48 h-48 bg-green-50 top-[40%] left-[30%] animate-pulse opacity-40" style="animation-duration: 12s;"></div>
+    </div>
+
+    <div class="px-6 py-4 flex justify-between items-center z-10 animate-enter">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-black">椰子通讯</h1>
+            <p id="txt-brand-sub" class="text-[11px] text-gray-500 font-semibold tracking-wide uppercase">EzRefill</p>
         </div>
-        
-        <div id="error" class="error">
-            Could not detect the eSIM link. Please go back and try again.
+        <button onclick="toggleLanguage()" class="glass-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 active-scale">
+            <i class="ph-bold ph-translate text-gray-700 text-sm"></i>
+            <span id="txt-lang-btn" class="text-xs font-bold text-gray-800">EN / 中</span>
+        </button>
+    </div>
+
+    <div class="flex-1 px-5 pb-4 flex flex-col justify-start overflow-y-auto gap-3 z-0 pt-2">
+        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100 min-h-[45vh]">
+            <div class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
+                <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
+                <div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-white">
+                    <i class="ph-bold ph-check text-white text-[10px]"></i>
+                </div>
+            </div>
+            <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-2">eSIM Activation</h2>
+            <p id="txt-act-desc" class="text-sm text-gray-500 mb-4 leading-relaxed max-w-[260px] font-medium">One tap to download your profile.</p>
+            
+            <div id="instructions" class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
+                <p class="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5"><i class="ph-bold ph-info"></i> <span id="txt-instr-title">Quick Instructions</span></p>
+                <ol class="text-xs text-blue-700 space-y-1.5 list-decimal list-inside leading-relaxed">
+                    <li id="txt-instr-1">Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong></li>
+                    <li id="txt-instr-2">Wait approximately <strong>1 minute</strong> for activation to complete</li>
+                </ol>
+                <p class="text-xs text-amber-700 mt-3 flex items-center gap-1.5 font-semibold"><i class="ph-bold ph-wifi-high"></i> <span id="txt-instr-wifi">Important: Stay connected to Wi-Fi during activation</span></p>
+            </div>
+            <a id="activateBtn" href="#" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
+                <span id="btnText">Activate Now</span>
+            </a>
+            <div id="errorDiv" class="hidden mt-4 w-full bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm font-medium">
+                <i class="ph-bold ph-warning-circle mr-2"></i>
+                <span id="errorText">Invalid link. Please try again.</span>
+            </div>
+            <div id="refreshIndicator" class="hidden mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                <i class="ph-bold ph-arrows-clockwise" id="refreshIcon"></i>
+                <span id="refreshStatus">5s</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col flex-1">
+            <div class="flex items-center justify-between mb-2 px-1 animate-enter delay-200">
+                <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
+            </div>
+            <div class="flex flex-col gap-2 w-full">
+                <button onclick="openProduct('iphone')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                        <i class="ph-fill ph-device-mobile-camera text-gray-900"></i>
+                    </div>
+                    <div class="flex-1 z-10">
+                        <h4 id="txt-p1-title" class="font-bold text-sm text-gray-900">iPhone 17</h4>
+                        <p id="txt-p1-sub" class="text-[11px] text-gray-500 font-medium">In Stock</p>
+                    </div>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
+                    </div>
+                    <i class="ph-duotone ph-device-mobile-camera absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                </button>
+                <button onclick="openProduct('accessories')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                        <i class="ph-fill ph-headphones text-gray-900"></i>
+                    </div>
+                    <div class="flex-1 z-10">
+                        <h4 id="txt-p2-title" class="font-bold text-sm text-gray-900">Accessories</h4>
+                        <p id="txt-p2-sub" class="text-[11px] text-gray-500 font-medium">Cables, Audio & More</p>
+                    </div>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
+                    </div>
+                    <i class="ph-duotone ph-headphones absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                </button>
+                <button onclick="openProduct('plans')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                        <i class="ph-fill ph-globe-hemisphere-east text-gray-900"></i>
+                    </div>
+                    <div class="flex-1 z-10">
+                        <h4 id="txt-p3-title" class="font-bold text-sm text-gray-900">Global Data</h4>
+                        <p id="txt-p3-sub" class="text-[11px] text-gray-500 font-medium">China & More</p>
+                    </div>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
+                    </div>
+                    <i class="ph-duotone ph-globe-hemisphere-east absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                </button>
+                <button onclick="openProduct('support')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                        <i class="ph-fill ph-map-pin text-gray-900"></i>
+                    </div>
+                    <div class="flex-1 z-10">
+                        <h4 id="txt-p4-title" class="font-bold text-sm text-gray-900">Contact Us</h4>
+                        <p id="txt-p4-sub" class="text-[11px] text-gray-500 font-medium">Visit Store</p>
+                    </div>
+                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
+                    </div>
+                    <i class="ph-duotone ph-map-pin absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
+        <div id="dimmer" onclick="closeSheet()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
+        <div id="bottomSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
+            <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
+            <div id="sheetContent" class="flex flex-col items-center text-center"></div>
         </div>
     </div>
 
     <script>
+        // Auto-detect language based on device language
+        function detectLanguage() {
+            const browserLang = navigator.language || navigator.userLanguage || 'en';
+            // Check if Chinese (any variant: zh, zh-CN, zh-TW, zh-HK, etc.)
+            if (browserLang.toLowerCase().startsWith('zh')) {
+                return 'zh';
+            }
+            // Default to English for all other languages
+            return 'en';
+        }
+        
+        let currentLang = detectLanguage();
+        let iphoneConfig = { region: 'na', model: 'pro', storage: '256' };
+        const uiText = {
+            'en': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': '中文', 'txt-act-title': 'eSIM Activation', 'txt-act-desc': 'One tap to download your profile.', 'btnText': 'Activate Now', 'txt-shop-title': 'Store Offerings', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': 'In Stock', 'txt-p2-title': 'Accessories', 'txt-p2-sub': 'Cables, Audio & More', 'txt-p3-title': 'Global Data', 'txt-p3-sub': 'China & More', 'txt-p4-title': 'Contact Us', 'txt-p4-sub': 'Visit Store', 'errorText': 'Invalid link. Please try again.', 'txt-instr-title': 'Quick Instructions', 'txt-instr-wifi': 'Important: Stay connected to Wi-Fi during activation' },
+            'zh': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': 'English', 'txt-act-title': 'eSIM 激活', 'txt-act-desc': '一键下载您的 eSIM 配置文件。', 'btnText': '立即激活', 'txt-shop-title': '精选商品', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': '现货供应', 'txt-p2-title': '精选配件', 'txt-p2-sub': '数据线，耳机等', 'txt-p3-title': '全球流量', 'txt-p3-sub': '中国与全球套餐', 'txt-p4-title': '联系我们', 'txt-p4-sub': '门店地址', 'errorText': '链接无效，请返回重试', 'txt-instr-title': '操作指南', 'txt-instr-wifi': '重要提示：激活期间请保持 Wi-Fi 连接' }
+        };
+        const instructionsText = {
+            'en': ['Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong>', 'Wait approximately <strong>1 minute</strong> for activation to complete'],
+            'zh': ['跳转到 iPhone SIM 激活页面后，点击 <strong>激活</strong>', '等待约 <strong>1 分钟</strong> 完成激活']
+        };
+        const accessoriesList = [
+            { en: 'Charging Cable', zh: '充电数据线', icon: 'ph-plugs' },
+            { en: 'Power Adapter', zh: '充电头', icon: 'ph-lightning' },
+            { en: 'AirPods 4', zh: 'AirPods 4', icon: 'ph-headphones' },
+            { en: 'AirPods 4 Pro', zh: 'AirPods 4 Pro', icon: 'ph-headphones' },
+            { en: 'Screen Protector + Install', zh: '屏幕贴膜 + 安装', icon: 'ph-phone' },
+            { en: 'Transparent Case', zh: '透明保护壳', icon: 'ph-square' }
+        ];
+        const chinaPlans = {
+            en: { title: 'China High-Speed Data', validity30: '30 Days Validity', validity90: '90 Days Validity', btnOther: 'Inquire Other Countries', plans30: [{ gb: '3GB', price: '$30' }, { gb: '5GB', price: '$40' }, { gb: '10GB', price: '$50' }, { gb: '20GB', price: '$60' }], plans90: [{ gb: '50GB', price: '$110' }] },
+            zh: { title: '中国高速流量包', validity30: '30天 有效期', validity90: '90天 有效期', btnOther: '咨询其他国家', plans30: [{ gb: '3GB', price: '$30' }, { gb: '5GB', price: '$40' }, { gb: '10GB', price: '$50' }, { gb: '20GB', price: '$60' }], plans90: [{ gb: '50GB', price: '$110' }] }
+        };
+        const contactInfo = {
+            en: { title: 'Visit Us', subtitle: 'Come say hello.', address: '136-78 Roosevelt Ave, Flushing, NY 11354', phone: '718-509-5888', btnCall: 'Call Us', btnNav: 'Navigate' },
+            zh: { title: '门店地址', subtitle: '欢迎光临', address: '136-78 Roosevelt Ave, Flushing, NY 11354', phone: '718-509-5888', btnCall: '致电', btnNav: '导航' }
+        };
+        const iphoneLabels = {
+            en: { title: 'iPhone 17 Series', region_na: 'North America (eSIM Only)', region_hk: 'Hong Kong (Physical + eSIM)', storage_256: '256GB', storage_512: '512GB', model_pro: '17 Pro', model_max: '17 Pro Max', btn: 'Inquire Now' },
+            zh: { title: 'iPhone 17 系列', region_na: '美版 (仅 eSIM)', region_hk: '港版 (双卡/实体卡)', storage_256: '256GB', storage_512: '512GB', model_pro: '17 Pro', model_max: '17 Pro Max', btn: '立即咨询' }
+        };
+
+        // Auto-refresh variables
+        let currentTargetUrl = null;
+        let refreshCountdown = 5;
+        let countdownInterval = null;
+        const activationId = new URLSearchParams(window.location.search).get('id');
+
+        async function checkForUpdates() {
+            if (!activationId) return;
+            
+            try {
+                const res = await fetch(`/api/activations/${activationId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.lpaCode && data.lpaCode !== currentTargetUrl) {
+                        // LPA code changed - reload page
+                        window.location.reload();
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking for updates:', e);
+            }
+        }
+
+        function startAutoRefresh() {
+            const indicator = document.getElementById('refreshIndicator');
+            if (!indicator || !activationId) return;
+            
+            // Show the indicator
+            indicator.classList.remove('hidden');
+            
+            countdownInterval = setInterval(() => {
+                refreshCountdown--;
+                if (refreshCountdown <= 0) {
+                    document.getElementById('refreshStatus').textContent = 'Checking...';
+                    document.getElementById('refreshIcon').style.animation = 'spin 1s linear infinite';
+                    checkForUpdates().then(() => {
+                        refreshCountdown = 5;
+                        document.getElementById('refreshIcon').style.animation = '';
+                        document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                    });
+                } else {
+                    document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
+                }
+            }, 1000);
+        }
+
         (function() {
-            // Get the target URL from query params
             const params = new URLSearchParams(window.location.search);
             const targetUrl = params.get('url');
-            
-            const manualBtn = document.getElementById('manualBtn');
-            const errorDiv = document.getElementById('error');
-            
+            currentTargetUrl = targetUrl;
+            const activateBtn = document.getElementById('activateBtn');
+            const errorDiv = document.getElementById('errorDiv');
             if (!targetUrl) {
-                errorDiv.style.display = 'block';
-                manualBtn.style.display = 'none';
+                errorDiv.classList.remove('hidden');
+                activateBtn.classList.add('opacity-50', 'pointer-events-none');
+                // Start auto-refresh to check for LPA code updates
+                if (activationId) startAutoRefresh();
                 return;
             }
+            activateBtn.href = targetUrl;
             
-            // Set the manual button href
-            manualBtn.href = targetUrl;
-            
-            // Detect if we're in WeChat or other in-app browser
-            const ua = navigator.userAgent.toLowerCase();
-            const isWeChat = ua.includes('micromessenger');
-            const isInAppBrowser = isWeChat || ua.includes('line') || ua.includes('fbav') || ua.includes('instagram');
-            
-            if (isInAppBrowser) {
-                // For in-app browsers, show instructions
-                document.querySelector('p').textContent = 'Tap the button below to open Safari and install your eSIM.';
-                
-                // Try to open in Safari using various methods
-                // Method 1: Direct navigation (works in some cases)
-                setTimeout(function() {
-                    window.location.href = targetUrl;
-                }, 1500);
-            } else {
-                // For Safari/Chrome, redirect immediately
-                setTimeout(function() {
-                    window.location.href = targetUrl;
-                }, 500);
-            }
+            // Apply detected language on page load
+            applyLanguage(currentLang);
         })();
+        
+        function applyLanguage(lang) {
+            const texts = uiText[lang];
+            for (const [id, text] of Object.entries(texts)) {
+                const el = document.getElementById(id);
+                if (el) el.innerText = text;
+            }
+            // Update instruction list items
+            const instr = instructionsText[lang];
+            document.getElementById('txt-instr-1').innerHTML = instr[0];
+            document.getElementById('txt-instr-2').innerHTML = instr[1];
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            applyLanguage(currentLang);
+        }
+
+        function getIphonePrice() {
+            let base = iphoneConfig.region === 'na' ? (iphoneConfig.model === 'pro' ? 1300 : 1400) : (iphoneConfig.model === 'pro' ? 1550 : 1650);
+            if (iphoneConfig.storage === '512') base += 300;
+            return `$${base}`;
+        }
+
+        function renderIphoneContent() {
+            const labels = iphoneLabels[currentLang];
+            const price = getIphonePrice();
+            document.getElementById('sheetContent').innerHTML = `
+                <div class="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mb-3 shadow-inner"><i class="ph-fill ph-device-mobile-camera text-3xl text-gray-900"></i></div>
+                <h2 class="text-xl font-bold text-gray-900 mb-1">${labels.title}</h2>
+                <div class="text-3xl font-bold text-black mb-4 tracking-tight">${price}</div>
+                <div class="w-full space-y-4 mb-6">
+                    <div class="flex gap-2"><button onclick="setIphoneState('region', 'na')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'na' ? 'selected' : ''}">${labels.region_na}</button><button onclick="setIphoneState('region', 'hk')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'hk' ? 'selected' : ''}">${labels.region_hk}</button></div>
+                    <div class="flex gap-2"><button onclick="setIphoneState('model', 'pro')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'pro' ? 'selected' : ''}">${labels.model_pro}</button><button onclick="setIphoneState('model', 'max')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'max' ? 'selected' : ''}">${labels.model_max}</button></div>
+                    <div class="flex gap-2"><button onclick="setIphoneState('storage', '256')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '256' ? 'selected' : ''}">${labels.storage_256}</button><button onclick="setIphoneState('storage', '512')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '512' ? 'selected' : ''}">${labels.storage_512}</button></div>
+                </div>
+                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">${labels.btn}</button>`;
+        }
+
+        function renderAccessoriesContent() {
+            const title = currentLang === 'en' ? 'Accessories' : '精选配件';
+            const subtitle = currentLang === 'en' ? 'Available in store' : '店内现货';
+            let itemsHtml = accessoriesList.map(item => `<div class="flex items-center gap-3 p-3 bg-white/60 rounded-xl border border-white/40"><div class="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-gray-700"><i class="ph-fill ${item.icon}"></i></div><span class="text-sm font-semibold text-gray-800 text-left flex-1">${currentLang === 'en' ? item.en : item.zh}</span></div>`).join('');
+            document.getElementById('sheetContent').innerHTML = `
+                <div class="w-16 h-16 bg-blue-50/80 rounded-full flex items-center justify-center mb-3 text-blue-600 shadow-inner"><i class="ph-fill ph-headphones text-3xl"></i></div>
+                <h2 class="text-xl font-bold text-gray-900 mb-1">${title}</h2><p class="text-sm font-medium text-gray-500 mb-6">${subtitle}</p>
+                <div class="grid grid-cols-1 gap-2 w-full mb-6">${itemsHtml}</div>
+                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">${currentLang === 'en' ? 'Check Availability' : '查询库存'}</button>`;
+        }
+
+        function renderPlansContent() {
+            const data = chinaPlans[currentLang];
+            const makePlanRow = (plan) => `<div class="flex justify-between items-center p-3 bg-white/60 rounded-lg border border-white/40 shadow-sm"><span class="font-bold text-gray-900">${plan.gb}</span><span class="font-semibold text-blue-600">${plan.price}</span></div>`;
+            document.getElementById('sheetContent').innerHTML = `
+                <div class="w-16 h-16 bg-green-50/80 rounded-full flex items-center justify-center mb-3 text-green-600 shadow-inner"><i class="ph-fill ph-globe-hemisphere-east text-3xl"></i></div>
+                <h2 class="text-xl font-bold text-gray-900 mb-6">${data.title}</h2>
+                <div class="w-full text-left mb-4"><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity30}</p><div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">${data.plans30.map(makePlanRow).join('')}</div></div>
+                <div class="w-full text-left mb-6"><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity90}</p><div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">${data.plans90.map(makePlanRow).join('')}</div></div>
+                <button onclick="openProduct('support')" class="w-full bg-black/5 text-black h-12 rounded-xl font-semibold text-sm active-scale border border-black/10">${data.btnOther}</button>`;
+        }
+
+        function renderContactContent() {
+            const data = contactInfo[currentLang];
+            document.getElementById('sheetContent').innerHTML = `
+                <div class="w-20 h-20 bg-gray-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner"><i class="ph-fill ph-map-pin text-4xl text-red-500"></i></div>
+                <h2 class="text-2xl font-bold mb-1 text-gray-900">${data.title}</h2><p class="text-sm font-medium text-gray-500 mb-6">${data.subtitle}</p>
+                <div class="w-full bg-white/50 rounded-xl p-6 mb-6 text-left border border-white/40 space-y-5 backdrop-blur-md">
+                    <div class="flex gap-3 items-start"><i class="ph-fill ph-map-pin text-gray-400 text-xl mt-1"></i><div><p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Address</p><p class="text-xl font-bold text-gray-900 leading-snug">${data.address}</p></div></div>
+                    <div class="w-full h-px bg-black/10"></div>
+                    <div class="flex gap-3 items-start"><i class="ph-fill ph-phone text-gray-400 text-xl mt-1"></i><div><p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Phone</p><p class="text-xl font-bold text-gray-900 leading-snug">${data.phone}</p></div></div>
+                </div>
+                <div class="flex gap-3 w-full">
+                    <a href="tel:7185095888" class="flex-1 bg-white/70 text-gray-900 h-14 rounded-xl font-semibold text-base flex items-center justify-center active-scale border border-white/50"><i class="ph-bold ph-phone mr-2"></i> ${data.btnCall}</a>
+                    <a href="https://maps.google.com/?q=136-78+Roosevelt+Ave,+Flushing,+NY+11354" target="_blank" class="flex-1 bg-blue-600 text-white h-14 rounded-xl font-semibold text-base flex items-center justify-center shadow-lg active-scale"><i class="ph-bold ph-arrow-bend-up-right mr-2"></i> ${data.btnNav}</a>
+                </div>`;
+        }
+
+        function setIphoneState(key, value) { iphoneConfig[key] = value; renderIphoneContent(); }
+        function openProduct(type) {
+            if (type === 'iphone') { iphoneConfig = { region: 'na', model: 'pro', storage: '256' }; renderIphoneContent(); }
+            else if (type === 'accessories') renderAccessoriesContent();
+            else if (type === 'plans') renderPlansContent();
+            else if (type === 'support') renderContactContent();
+            openSheet();
+        }
+        function openSheet() {
+            document.getElementById('productOverlay').classList.remove('pointer-events-none');
+            document.getElementById('dimmer').classList.remove('bg-black/0');
+            document.getElementById('dimmer').classList.add('bg-black/20', 'backdrop-blur-sm');
+            document.getElementById('bottomSheet').classList.remove('translate-y-full');
+        }
+        function closeSheet() {
+            document.getElementById('bottomSheet').classList.add('translate-y-full');
+            document.getElementById('dimmer').classList.remove('bg-black/20', 'backdrop-blur-sm');
+            document.getElementById('dimmer').classList.add('bg-black/0');
+            setTimeout(() => document.getElementById('productOverlay').classList.add('pointer-events-none'), 300);
+        }
     </script>
 </body>
 </html>

@@ -13,7 +13,6 @@ import {
   ExternalLink,
   RefreshCw,
   Share2,
-  Download,
   MessageCircle,
   Settings,
   Clock,
@@ -28,6 +27,7 @@ function App() {
   const [smdpAddress, setSmdpAddress] = useState('');
   const [activationCode, setActivationCode] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
@@ -248,6 +248,7 @@ function App() {
     return safariRedirectLink;
   };
 
+  // eslint-disable-next-line no-unused-vars
   const getDirectAppleLink = (lpaData) => {
     const lpaString = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}${lpaData.confirmationCode ? '$' + lpaData.confirmationCode : ''}`;
     return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
@@ -603,6 +604,7 @@ function App() {
         html5QrCodeRef.current.stop().catch(() => { });
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Login screen
