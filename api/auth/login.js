@@ -39,7 +39,7 @@ module.exports = async function handler(req, res) {
 
     // Get user from Redis
     const userData = await redis.get(`user:${username}`);
-    
+
     if (!userData) {
       // First time setup - create admin user if credentials match default
       if (username === 'admin' && password === 'Aa13678!') {
@@ -51,7 +51,7 @@ module.exports = async function handler(req, res) {
           passwordSetByUser: false, // Default password, not set by user
           createdAt: new Date().toISOString()
         }));
-        
+
         const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
         await redis.disconnect();
         return res.status(200).json({ token, username: 'admin', isDefaultPassword: true });
@@ -62,13 +62,27 @@ module.exports = async function handler(req, res) {
 
     const user = JSON.parse(userData);
 
-    // If user has set their own password, don't allow default password
-    if (user.passwordSetByUser && password === 'Aa13678!') {
+    // Check password
+    const passwordMatch = bcrypt.compareSync(password, user.password);
+
+    // Special case: admin with new default password but old hash in DB
+    // This handles the password migration from admin123 to Aa13678!
+    if (!passwordMatch && username === 'admin' && password === 'Aa13678!' && !user.passwordSetByUser) {
+      // Reset admin password to new default
+      const hashedPassword = bcrypt.hashSync('Aa13678!', 10);
+      await redis.set(`user:admin`, JSON.stringify({
+        ...user,
+        password: hashedPassword,
+        passwordSetByUser: false,
+        updatedAt: new Date().toISOString()
+      }));
+
+      const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
       await redis.disconnect();
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(200).json({ token, username: 'admin', isDefaultPassword: true });
     }
 
-    if (!bcrypt.compareSync(password, user.password)) {
+    if (!passwordMatch) {
       await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -79,7 +93,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ token, username: user.username, isDefaultPassword });
   } catch (error) {
     console.error('Login error:', error);
-    if (redis) await redis.disconnect().catch(() => {});
+    if (redis) await redis.disconnect().catch(() => { });
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };

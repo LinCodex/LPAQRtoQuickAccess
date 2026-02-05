@@ -259,9 +259,115 @@ function generateActivationUrl(lpaCode) {
   return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
 }
 
+const SHORTLINKS_FILE = path.join(DATA_DIR, 'shortlinks.json');
+
+// Initialize shortlinks file if it doesn't exist
+if (!fs.existsSync(SHORTLINKS_FILE)) {
+  fs.writeFileSync(SHORTLINKS_FILE, JSON.stringify({}, null, 2));
+}
+
+const readShortLinks = () => {
+  try {
+    return JSON.parse(fs.readFileSync(SHORTLINKS_FILE, 'utf8'));
+  } catch (error) {
+    return {};
+  }
+};
+
+const writeShortLinks = (data) => {
+  fs.writeFileSync(SHORTLINKS_FILE, JSON.stringify(data, null, 2));
+};
+
+// Generate short 6-character ID (base62)
+function generateShortId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// ... existing endpoints ...
+
+// ============ SHORT LINK ROUTES ============
+
+// Create short link
+app.post('/api/shortlink', (req, res) => {
+  const { lpaCode } = req.body;
+
+  if (!lpaCode || !lpaCode.startsWith('LPA:')) {
+    return res.status(400).json({ error: 'Invalid LPA code' });
+  }
+
+  try {
+    const shortLinks = readShortLinks();
+
+    // Generate unique short ID
+    let shortId = generateShortId();
+    let attempts = 0;
+
+    // Ensure uniqueness
+    while (shortLinks[shortId] && attempts < 10) {
+      shortId = generateShortId();
+      attempts++;
+    }
+
+    // Store short link
+    // Note: Local storage doesn't implement expiry for simplicity, but Vercel/Redis does (30 days)
+    shortLinks[shortId] = {
+      lpaCode,
+      createdAt: new Date().toISOString()
+    };
+
+    writeShortLinks(shortLinks);
+
+    const domain = req.protocol + '://' + req.get('host');
+
+    return res.status(201).json({
+      shortId,
+      shortUrl: `${domain}/s/${shortId}`,
+      lpaCode
+    });
+  } catch (error) {
+    console.error('Error creating short link:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get short link
+app.get('/api/shortlink/:id', (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: 'Missing short link ID' });
+  }
+
+  try {
+    const shortLinks = readShortLinks();
+    const linkData = shortLinks[id];
+
+    if (!linkData) {
+      return res.status(404).json({ error: 'Short link not found' });
+    }
+
+    // Generate activation URL
+    const activationUrl = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(linkData.lpaCode)}`;
+
+    return res.json({
+      lpaCode: linkData.lpaCode,
+      activationUrl
+    });
+  } catch (error) {
+    console.error('Error fetching short link:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`EZRefill API Server running on port ${PORT}`);
   console.log(`Default admin credentials: admin / Aa13678!`);
   console.log(`Please change the password after first login!`);
 });
+
