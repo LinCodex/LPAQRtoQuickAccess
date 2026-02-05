@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import QRCode from 'qrcode';
-import { 
-  Smartphone, 
-  QrCode, 
-  Link2, 
-  Copy, 
-  Check, 
-  Camera, 
-  Upload, 
+import {
+  Smartphone,
+  QrCode,
+  Link2,
+  Copy,
+  Check,
+  Camera,
+  Upload,
   X,
   ExternalLink,
   RefreshCw,
@@ -34,11 +34,8 @@ function App() {
   const [scannerReady, setScannerReady] = useState(false);
   const [scannerError, setScannerError] = useState('');
   const [scannerPaused, setScannerPaused] = useState(false);
-  const [shortLink, setShortLink] = useState('');
-  const [isShortening, setIsShortening] = useState(false);
   const [standbyPhone, setStandbyPhone] = useState('');
   const [standbyLink, setStandbyLink] = useState('');
-  const [standbyShortLink, setStandbyShortLink] = useState('');
   const [isCreatingStandby, setIsCreatingStandby] = useState(false);
   const [standbyError, setStandbyError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -57,19 +54,43 @@ function App() {
   const [cutoutActive, setCutoutActive] = useState(false);
   const [cutoutStatus, setCutoutStatus] = useState('');
   const [cutoutPreview, setCutoutPreview] = useState('');
+  const [parsedLpaData, setParsedLpaData] = useState(null); // Store parsed SMDP data for confirmation
+  const [shortLink, setShortLink] = useState(''); // Short link for sharing
+  const [isCreatingShortLink, setIsCreatingShortLink] = useState(false);
   const html5QrCodeRef = useRef(null);
   const scannerInitialized = useRef(false);
   const mediaStreamRef = useRef(null);
 
   // API Configuration
-  const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3001/api' 
-    : 'https://lpaquicklink.vercel.app/api';
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:3001/api'
+    : 'https://ezrefillny.net/api';
 
-  // Short.io configuration
-  const SHORTIO_API_KEY = 'sk_vDzD3cciTgwFOR0D';
-  const SHORTIO_DOMAIN = 'ezrefill.short.gy';
-  const fileInputRef = useRef(null);
+  // Create short link from LPA code
+  const createShortLink = async (lpaCode) => {
+    if (!lpaCode) return;
+    setIsCreatingShortLink(true);
+    setShortLink('');
+
+    try {
+      const response = await fetch(`${API_BASE}/shortlink`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lpaCode })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShortLink(data.shortUrl);
+      } else {
+        console.error('Failed to create short link');
+      }
+    } catch (error) {
+      console.error('Error creating short link:', error);
+    } finally {
+      setIsCreatingShortLink(false);
+    }
+  };
 
   // Check for saved authentication on mount
   useEffect(() => {
@@ -163,7 +184,6 @@ function App() {
     setIsCreatingStandby(true);
     setStandbyError('');
     setStandbyLink('');
-    setStandbyShortLink('');
 
     try {
       const response = await fetch(`${API_BASE}/admin/activations`, {
@@ -182,60 +202,9 @@ function App() {
       }
 
       const data = await response.json();
-      const baseUrl = 'https://lpaquicklink.vercel.app';
+      const baseUrl = 'https://ezrefillny.net';
       const longUrl = `${baseUrl}/activate?id=${data.id}`;
       setStandbyLink(longUrl);
-
-      // Create short URL with last 4 digits of phone + date + random suffix as path
-      const phoneDigits = standbyPhone.replace(/\D/g, '');
-      const last4 = phoneDigits.slice(-4);
-      const today = new Date();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const randomSuffix = Math.random().toString(36).substring(2, 5); // 3 char random suffix
-      const customPath = last4 ? `${last4}-${month}${day}-${randomSuffix}` : undefined;
-
-      try {
-        const shortResponse = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': SHORTIO_API_KEY
-          },
-          body: JSON.stringify({
-            domain: SHORTIO_DOMAIN,
-            originalURL: longUrl,
-            path: customPath
-          })
-        });
-
-        const shortData = await shortResponse.json();
-        if (shortData.shortURL) {
-          setStandbyShortLink(shortData.shortURL);
-        } else if (shortResponse.status === 409) {
-          // Conflict - try without custom path
-          const retryResponse = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': SHORTIO_API_KEY
-            },
-            body: JSON.stringify({
-              domain: SHORTIO_DOMAIN,
-              originalURL: longUrl
-            })
-          });
-          const retryData = await retryResponse.json();
-          if (retryData.shortURL) {
-            setStandbyShortLink(retryData.shortURL);
-          }
-        }
-      } catch (shortErr) {
-        console.error('Failed to create short link for standby:', shortErr);
-        // Continue without short link - not critical
-      }
     } catch (err) {
       setStandbyError('Failed to create standby URL. Make sure the server is running.');
     } finally {
@@ -244,8 +213,7 @@ function App() {
   };
 
   const copyStandbyLink = () => {
-    // Prefer short link if available
-    navigator.clipboard.writeText(standbyShortLink || standbyLink);
+    navigator.clipboard.writeText(standbyLink);
   };
 
   // Parse LPA code and generate activation link
@@ -253,7 +221,7 @@ function App() {
     // LPA format: LPA:1$<SM-DP+ Address>$<Activation Code>$<Confirmation Code (optional)>
     const lpaRegex = /^LPA:1\$([^$]+)\$([^$]+)(?:\$([^$]*))?$/i;
     const match = code.trim().match(lpaRegex);
-    
+
     if (!match) {
       return null;
     }
@@ -268,15 +236,15 @@ function App() {
   const generateLink = (lpaData) => {
     // Apple Universal Link for eSIM installation (iOS 17.4+)
     const lpaString = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}${lpaData.confirmationCode ? '$' + lpaData.confirmationCode : ''}`;
-    
+
     // Direct Apple eSIM setup URL
     const appleLink = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
-    
+
     // Create a redirect URL that forces Safari to open (bypasses WeChat browser)
     // Uses the deployed redirect page
-    const baseUrl = 'https://lpaquicklink.vercel.app';
+    const baseUrl = 'https://ezrefillny.net';
     const safariRedirectLink = `${baseUrl}/redirect?url=${encodeURIComponent(appleLink)}`;
-    
+
     return safariRedirectLink;
   };
 
@@ -285,50 +253,6 @@ function App() {
     return `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(lpaString)}`;
   };
 
-  // Shorten link using Short.io API via CORS proxy
-  const shortenLink = async (longUrl) => {
-    setIsShortening(true);
-    setError('');
-    
-    try {
-      // Use CORS proxy for browser requests with secret key
-      const response = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.short.io/links'), {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': SHORTIO_API_KEY
-        },
-        body: JSON.stringify({
-          domain: SHORTIO_DOMAIN,
-          originalURL: longUrl,
-          allowDuplicates: false
-        })
-      });
-      
-      const data = await response.json();
-      console.log('Short.io response:', data);
-      
-      if (data.shortURL) {
-        setShortLink(data.shortURL);
-        return data.shortURL;
-      } else if (data.error) {
-        setError(`Short.io: ${data.error}`);
-        console.error('Short.io error:', data);
-        return null;
-      } else {
-        setError('Failed to create short link');
-        console.error('Short.io unexpected response:', data);
-        return null;
-      }
-    } catch (err) {
-      console.error('Failed to shorten link:', err);
-      setError(`Network error: ${err.message}`);
-      return null;
-    } finally {
-      setIsShortening(false);
-    }
-  };
 
   const handleConvert = async () => {
     setError('');
@@ -341,7 +265,7 @@ function App() {
     }
 
     const parsed = parseLpaCode(lpaCode);
-    
+
     if (!parsed) {
       setError('Invalid LPA format. Expected: LPA:1$<SM-DP+ Address>$<Activation Code>');
       return;
@@ -368,7 +292,7 @@ function App() {
 
   const initScanner = async () => {
     if (scannerInitialized.current) return;
-    
+
     setScannerError('');
 
     try {
@@ -379,7 +303,7 @@ function App() {
           useBarCodeDetectorIfSupported: true // Use native BarcodeDetector API if available
         }
       });
-      
+
       await html5QrCodeRef.current.start(
         { facingMode: "environment" },
         {
@@ -388,7 +312,7 @@ function App() {
           aspectRatio: 1.0,
           disableFlip: false,
           // Optimized scanning settings
-          formatsToSupport: [ 0 ] // QR_CODE only = faster
+          formatsToSupport: [0] // QR_CODE only = faster
         },
         async (decodedText) => {
           // Pause scanner after successful scan
@@ -400,6 +324,7 @@ function App() {
           // Auto-convert when QR is scanned
           const parsed = parseLpaCode(decodedText);
           if (parsed) {
+            setParsedLpaData(parsed); // Store for confirmation display
             const link = generateLink(parsed);
             setGeneratedLink(link);
             // Generate QR code for the redirect link
@@ -408,11 +333,11 @@ function App() {
               margin: 2,
               color: { dark: '#1e293b', light: '#ffffff' }
             }).then(setQrCodeDataUrl).catch(console.error);
-            // Auto-shorten the link
-            shortenLink(link);
+            // Auto-create short link
+            createShortLink(decodedText);
           }
         },
-        () => {}
+        () => { }
       );
       setScannerReady(true);
       scannerInitialized.current = true;
@@ -435,22 +360,19 @@ function App() {
     } catch (err) {
       setError('Could not read QR code from image');
     }
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
-  // Screen Cutout Functions
-  const startScreenCutout = () => {
+  // Screen Cutout Functions - made instant (directly captures without extra click)
+  const startScreenCutout = async () => {
     if (cutoutActive) {
       cancelCutout();
       return;
     }
     setCutoutActive(true);
-    setCutoutStatus('Click "Start Capture" then select the screen area with the QR code');
+    setCutoutStatus('Select the screen/window to capture...');
     setCutoutPreview('');
+    // Immediately trigger capture instead of waiting for button click
+    await captureScreen();
   };
 
   const cancelCutout = () => {
@@ -465,7 +387,7 @@ function App() {
 
   const captureScreen = async () => {
     setCutoutStatus('Select the screen/window to capture...');
-    
+
     try {
       mediaStreamRef.current = await navigator.mediaDevices.getDisplayMedia({
         video: {
@@ -543,10 +465,11 @@ function App() {
       if (result.startsWith('LPA:')) {
         setLpaCode(result);
         setCutoutStatus('✓ LPA Code extracted from screenshot!');
-        
+
         // Auto-convert
         const parsed = parseLpaCode(result);
         if (parsed) {
+          setParsedLpaData(parsed); // Store for confirmation display
           const link = generateLink(parsed);
           setGeneratedLink(link);
           QRCode.toDataURL(link, {
@@ -554,7 +477,8 @@ function App() {
             margin: 2,
             color: { dark: '#1e293b', light: '#ffffff' }
           }).then(setQrCodeDataUrl).catch(console.error);
-          shortenLink(link);
+          // Auto-create short link
+          createShortLink(result);
         }
 
         // Auto-close after success
@@ -612,9 +536,10 @@ function App() {
     setActivationCode('');
     setGeneratedLink('');
     setQrCodeDataUrl('');
-    setShortLink('');
     setError('');
     setCopied(false);
+    setParsedLpaData(null); // Clear confirmation data
+    setShortLink(''); // Clear short link
     // Resume scanner
     if (html5QrCodeRef.current && scannerPaused) {
       html5QrCodeRef.current.resume();
@@ -627,7 +552,6 @@ function App() {
     setError('');
     setGeneratedLink('');
     setQrCodeDataUrl('');
-    setShortLink('');
 
     if (!smdpAddress.trim() || !activationCode.trim()) {
       setError('Please enter both SM-DP+ Address and Activation Code');
@@ -642,6 +566,7 @@ function App() {
 
     const link = generateLink(lpaData);
     setGeneratedLink(link);
+    setParsedLpaData(lpaData);
     setLpaCode(`LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}`);
 
     // Pause scanner if running
@@ -658,12 +583,12 @@ function App() {
         color: { dark: '#1e293b', light: '#ffffff' }
       });
       setQrCodeDataUrl(qrDataUrl);
+      // Create short link
+      const lpaCodeStr = `LPA:1$${lpaData.smdpAddress}$${lpaData.activationCode}`;
+      createShortLink(lpaCodeStr);
     } catch (err) {
       console.error('QR generation error:', err);
     }
-
-    // Auto-shorten the link
-    shortenLink(link);
   };
 
   useEffect(() => {
@@ -675,7 +600,7 @@ function App() {
     return () => {
       clearTimeout(timer);
       if (html5QrCodeRef.current && scannerInitialized.current) {
-        html5QrCodeRef.current.stop().catch(() => {});
+        html5QrCodeRef.current.stop().catch(() => { });
       }
     };
   }, []);
@@ -731,9 +656,9 @@ function App() {
                   <button type="submit" className="primary-btn login-btn" disabled={isResetting}>
                     {isResetting ? 'Resetting...' : 'Reset Password'}
                   </button>
-                  <button 
-                    type="button" 
-                    className="secondary-btn" 
+                  <button
+                    type="button"
+                    className="secondary-btn"
                     onClick={() => {
                       setShowForgotPassword(false);
                       setResetError('');
@@ -776,8 +701,8 @@ function App() {
                 <button type="submit" className="primary-btn login-btn" disabled={isLoggingIn}>
                   {isLoggingIn ? 'Signing in...' : 'Sign In'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="forgot-password-btn"
                   onClick={() => setShowForgotPassword(true)}
                 >
@@ -843,9 +768,9 @@ function App() {
                   {isResetting ? 'Saving...' : 'Set New Password'}
                 </button>
                 {!isDefaultPassword && (
-                  <button 
-                    type="button" 
-                    className="secondary-btn" 
+                  <button
+                    type="button"
+                    className="secondary-btn"
                     onClick={() => setShowChangePassword(false)}
                   >
                     Cancel
@@ -913,15 +838,14 @@ function App() {
               <label className="method-btn">
                 <Upload size={18} />
                 Upload QR Image
-                <input 
-                  type="file" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  accept="image/*"
                   onChange={handleFileUpload}
-                  ref={fileInputRef}
-                  hidden 
+                  hidden
                 />
               </label>
-              <button 
+              <button
                 className={`method-btn cutout-btn ${cutoutActive ? 'active' : ''}`}
                 onClick={startScreenCutout}
               >
@@ -1028,46 +952,100 @@ function App() {
                 Generated Activation Link
               </h2>
 
-              <div className="quick-copy">
-                {!shortLink ? (
-                  <button 
-                    className="shorten-btn"
-                    onClick={() => shortenLink(generatedLink)}
-                    disabled={isShortening}
-                  >
-                    {isShortening ? (
-                      <><RefreshCw size={18} className="spinning" /> Generating...</>
-                    ) : (
-                      <><Link2 size={18} /> Shorten Link</>
+              {/* SMDP Confirmation Display */}
+              {parsedLpaData && (
+                <div className="smdp-confirmation" style={{
+                  background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                  border: '1px solid #7dd3fc',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <Check size={20} style={{ color: '#0ea5e9' }} />
+                    <span style={{ fontWeight: '600', color: '#0369a1' }}>QR Code Verified</span>
+                  </div>
+                  <div style={{ display: 'grid', gap: '8px' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SM-DP+ Server</span>
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1e293b', wordBreak: 'break-all', background: 'white', padding: '8px 10px', borderRadius: '6px', marginTop: '4px' }}>
+                        {parsedLpaData.smdpAddress}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Activation Code</span>
+                      <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1e293b', wordBreak: 'break-all', background: 'white', padding: '8px 10px', borderRadius: '6px', marginTop: '4px' }}>
+                        {parsedLpaData.activationCode}
+                      </div>
+                    </div>
+                    {parsedLpaData.confirmationCode && (
+                      <div>
+                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Confirmation Code</span>
+                        <div style={{ fontFamily: 'monospace', fontSize: '13px', color: '#1e293b', background: 'white', padding: '8px 10px', borderRadius: '6px', marginTop: '4px' }}>
+                          {parsedLpaData.confirmationCode}
+                        </div>
+                      </div>
                     )}
-                  </button>
-                ) : (
-                  <div className="short-link-display">
-                    <span className="short-link-label">Short Link:</span>
-                    <code className="short-link-url">{shortLink}</code>
-                    <button 
+                  </div>
+                </div>
+              )}
+
+              {/* Short Link Display */}
+              <div className="quick-copy" style={{ marginBottom: '16px' }}>
+                {isCreatingShortLink ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                    <RefreshCw size={18} className="spinning" />
+                    <span>Creating short link...</span>
+                  </div>
+                ) : shortLink ? (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                    border: '1px solid #86efac',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Share Link</span>
+                      <code style={{ display: 'block', fontSize: '14px', color: '#15803d', fontWeight: '600', marginTop: '4px', wordBreak: 'break-all' }}>{shortLink}</code>
+                    </div>
+                    <button
                       className={`copy-link-btn ${copied ? 'copied' : ''}`}
                       onClick={() => {
                         navigator.clipboard.writeText(shortLink);
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
+                      style={{ flexShrink: 0 }}
                     >
                       {copied ? <Check size={18} /> : <Copy size={18} />}
                       {copied ? 'Copied!' : 'Copy'}
                     </button>
                   </div>
+                ) : (
+                  <button
+                    className={`copy-link-btn ${copied ? 'copied' : ''}`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                  >
+                    {copied ? <Check size={18} /> : <Copy size={18} />}
+                    {copied ? 'Copied!' : 'Copy Full Link'}
+                  </button>
                 )}
               </div>
 
               <div className="link-actions">
-                <a 
+                <a
                   href={`weixin://`}
                   className="wechat-btn full-width"
                   onClick={(e) => {
-                    // Copy short link if available, otherwise original link
-                    const linkToCopy = shortLink || generatedLink;
-                    navigator.clipboard.writeText(linkToCopy).catch(() => {});
+                    navigator.clipboard.writeText(generatedLink).catch(() => { });
                   }}
                 >
                   <MessageCircle size={20} />
@@ -1077,7 +1055,7 @@ function App() {
 
               <div className="link-display">
                 <code>{generatedLink}</code>
-                <button 
+                <button
                   className="icon-btn"
                   onClick={shareLink}
                   title="Share link"
@@ -1103,7 +1081,7 @@ function App() {
               Create Standby URL
             </h2>
             <p className="section-desc">Generate a pre-activation link for customers. Add LPA code later via Admin Panel.</p>
-            
+
             <div className="input-group">
               <label htmlFor="standby-phone">
                 <Phone size={14} style={{ display: 'inline', marginRight: '6px' }} />
@@ -1118,7 +1096,7 @@ function App() {
               />
             </div>
 
-            <button 
+            <button
               className="primary-btn standby-btn"
               onClick={createStandbyUrl}
               disabled={isCreatingStandby}
@@ -1136,15 +1114,6 @@ function App() {
 
             {standbyLink && (
               <div className="standby-result">
-                {standbyShortLink && (
-                  <div className="standby-link-display" style={{ marginBottom: '12px' }}>
-                    <span className="standby-label">Short Link:</span>
-                    <code className="standby-url">{standbyShortLink}</code>
-                    <button className="copy-standby-btn" onClick={() => navigator.clipboard.writeText(standbyShortLink)}>
-                      <Copy size={16} />
-                    </button>
-                  </div>
-                )}
                 <div className="standby-link-display">
                   <span className="standby-label">Full Link:</span>
                   <code className="standby-url">{standbyLink}</code>

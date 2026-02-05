@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="EZRefill">
@@ -21,68 +23,134 @@
             overscroll-behavior-y: none;
             -webkit-font-smoothing: antialiased;
         }
-        *::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
+
+        *::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         .glass-panel {
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(40px) saturate(120%);
             -webkit-backdrop-filter: blur(40px) saturate(120%);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.05);
             transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
         }
+
         .glass-btn {
             background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(25px);
             -webkit-backdrop-filter: blur(25px);
             border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 4px 10px rgba(0, 0, 0, 0.05);
         }
+
         @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
-        .animate-enter { opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .delay-100 { animation-delay: 100ms; }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .active-scale:active { transform: scale(0.95); }
+
+        .animate-enter {
+            opacity: 0;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-100 {
+            animation-delay: 100ms;
+        }
+
+        .delay-200 {
+            animation-delay: 200ms;
+        }
+
+        .delay-300 {
+            animation-delay: 300ms;
+        }
+
+        .active-scale:active {
+            transform: scale(0.95);
+        }
+
         @keyframes softPulse {
-            0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-            50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+            0%,
+            100% {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+
+            50% {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
         }
-        .animate-soft-pulse { animation: softPulse 3s infinite ease-in-out; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+
+        .animate-soft-pulse {
+            animation: softPulse 3s infinite ease-in-out;
+        }
+
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .pt-safe {
+            padding-top: env(safe-area-inset-top, 20px);
+        }
+
         .mesh-bg {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: -1;
             background: radial-gradient(circle at 50% 10%, #ffffff 0%, #f2f2f7 80%);
         }
+
         .orb {
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
             opacity: 0.5;
         }
+
         @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
-        .animate-spin { animation: spin 1s linear infinite; }
-        
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
         /* Status badge styles */
         .status-standby {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #92400e;
             border: 1px solid #fcd34d;
         }
+
         .status-processing {
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             color: #1e40af;
             border: 1px solid #93c5fd;
         }
+
         .status-active {
             background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
             color: #065f46;
@@ -90,11 +158,15 @@
         }
     </style>
 </head>
+
 <body class="h-screen w-full flex flex-col overflow-hidden pb-safe pt-safe selection:bg-black selection:text-white">
     <div class="mesh-bg">
-        <div class="orb w-80 h-80 bg-blue-100 top-[-50px] left-[-50px] animate-pulse opacity-60" style="animation-duration: 8s;"></div>
-        <div class="orb w-72 h-72 bg-purple-100 bottom-[10%] right-[-20px] animate-pulse opacity-60" style="animation-duration: 10s;"></div>
-        <div class="orb w-48 h-48 bg-green-50 top-[40%] left-[30%] animate-pulse opacity-40" style="animation-duration: 12s;"></div>
+        <div class="orb w-80 h-80 bg-blue-100 top-[-50px] left-[-50px] animate-pulse opacity-60"
+            style="animation-duration: 8s;"></div>
+        <div class="orb w-72 h-72 bg-purple-100 bottom-[10%] right-[-20px] animate-pulse opacity-60"
+            style="animation-duration: 10s;"></div>
+        <div class="orb w-48 h-48 bg-green-50 top-[40%] left-[30%] animate-pulse opacity-40"
+            style="animation-duration: 12s;"></div>
     </div>
 
     <div class="px-6 py-4 flex justify-between items-center z-10 animate-enter">
@@ -102,7 +174,8 @@
             <h1 class="text-xl font-bold tracking-tight text-black">椰子通讯</h1>
             <p id="txt-brand-sub" class="text-[11px] text-gray-500 font-semibold tracking-wide uppercase">EzRefill</p>
         </div>
-        <button onclick="toggleLanguage()" class="glass-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 active-scale">
+        <button onclick="toggleLanguage()"
+            class="glass-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 active-scale">
             <i class="ph-bold ph-translate text-gray-700 text-sm"></i>
             <span id="txt-lang-btn" class="text-xs font-bold text-gray-800">EN / 中</span>
         </button>
@@ -119,23 +192,27 @@
     <!-- Main Content (hidden initially) -->
     <div id="mainContent" class="flex-1 px-5 pb-4 flex flex-col justify-start overflow-y-auto gap-3 z-0 pt-2 hidden">
         <!-- Activation Card -->
-        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100 min-h-[45vh]">
+        <div
+            class="glass-panel rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100 min-h-[45vh]">
             <!-- Status Badge -->
-            <div id="statusBadge" class="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+            <div id="statusBadge"
+                class="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
                 <i id="statusIcon" class="ph-bold"></i>
                 <span id="statusText">Loading</span>
             </div>
 
-            <div id="mainIcon" class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
+            <div id="mainIcon"
+                class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
                 <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
                 <div id="iconBadge" class="absolute -bottom-1 -right-1 rounded-full p-1 border-2 border-white hidden">
                     <i class="ph-bold text-white text-[10px]"></i>
                 </div>
             </div>
-            
+
             <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-2">eSIM Activation</h2>
-            <p id="txt-act-desc" class="text-sm text-gray-500 mb-6 leading-relaxed max-w-[260px] font-medium">Loading activation status...</p>
-            
+            <p id="txt-act-desc" class="text-sm text-gray-500 mb-6 leading-relaxed max-w-[260px] font-medium">Loading
+                activation status...</p>
+
             <!-- Phone number display -->
             <div id="phoneDisplay" class="hidden mb-4 px-4 py-2 bg-gray-100/50 rounded-xl">
                 <p class="text-xs text-gray-400 font-medium" id="txt-phone-label">Phone Number</p>
@@ -143,30 +220,36 @@
             </div>
 
             <!-- Active State Button -->
-            <button id="activateBtn" onclick="showInstructions()" class="hidden active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10">
+            <button id="activateBtn" onclick="showInstructions()"
+                class="hidden active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10">
                 <span id="btnText">Activate Now</span>
             </button>
 
             <!-- Standby State Button -->
-            <button id="standbyBtn" class="hidden w-full bg-gray-300 text-gray-500 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-not-allowed">
+            <button id="standbyBtn"
+                class="hidden w-full bg-gray-300 text-gray-500 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-not-allowed">
                 <i class="ph-bold ph-hourglass-medium"></i>
                 <span id="standbyBtnText">Awaiting Activation</span>
             </button>
 
             <!-- Processing State Button -->
-            <button id="processingBtn" class="hidden w-full bg-blue-100 text-blue-600 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-not-allowed">
+            <button id="processingBtn"
+                class="hidden w-full bg-blue-100 text-blue-600 h-12 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-not-allowed">
                 <i class="ph-bold ph-circle-notch animate-spin"></i>
                 <span id="processingBtnText">Processing...</span>
             </button>
 
             <!-- Error State -->
-            <div id="errorDiv" class="hidden mt-4 w-full bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm font-medium">
+            <div id="errorDiv"
+                class="hidden mt-4 w-full bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm font-medium">
                 <i class="ph-bold ph-warning-circle mr-2"></i>
                 <span id="errorText">Activation not found.</span>
             </div>
 
             <!-- Info text for standby -->
-            <p id="standbyInfo" class="hidden mt-4 text-xs text-gray-400 text-center max-w-[240px]" data-en="Your eSIM is being prepared. You'll be able to activate once it's ready." data-zh="您的 eSIM 正在准备中，准备好后即可激活。"></p>
+            <p id="standbyInfo" class="hidden mt-4 text-xs text-gray-400 text-center max-w-[240px]"
+                data-en="Your eSIM is being prepared. You'll be able to activate once it's ready."
+                data-zh="您的 eSIM 正在准备中，准备好后即可激活。"></p>
         </div>
 
         <!-- Store Offerings -->
@@ -175,57 +258,73 @@
                 <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
             </div>
             <div class="flex flex-col gap-2 w-full">
-                <button onclick="openProduct('iphone')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                <button onclick="openProduct('iphone')"
+                    class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div
+                        class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-device-mobile-camera text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
                         <h4 id="txt-p1-title" class="font-bold text-sm text-gray-900">iPhone 17</h4>
                         <p id="txt-p1-sub" class="text-[11px] text-gray-500 font-medium">In Stock</p>
                     </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                    <div
+                        class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
                         <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-device-mobile-camera absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                    <i
+                        class="ph-duotone ph-device-mobile-camera absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('accessories')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                <button onclick="openProduct('accessories')"
+                    class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
+                    <div
+                        class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-headphones text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
                         <h4 id="txt-p2-title" class="font-bold text-sm text-gray-900">Accessories</h4>
                         <p id="txt-p2-sub" class="text-[11px] text-gray-500 font-medium">Cables, Audio & More</p>
                     </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                    <div
+                        class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
                         <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-headphones absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                    <i
+                        class="ph-duotone ph-headphones absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('plans')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                <button onclick="openProduct('plans')"
+                    class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div
+                        class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-globe-hemisphere-east text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
                         <h4 id="txt-p3-title" class="font-bold text-sm text-gray-900">Global Data</h4>
                         <p id="txt-p3-sub" class="text-[11px] text-gray-500 font-medium">China & More</p>
                     </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                    <div
+                        class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
                         <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-globe-hemisphere-east absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                    <i
+                        class="ph-duotone ph-globe-hemisphere-east absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
-                <button onclick="openProduct('support')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
+                <button onclick="openProduct('support')"
+                    class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
+                    <div
+                        class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
                         <i class="ph-fill ph-map-pin text-gray-900"></i>
                     </div>
                     <div class="flex-1 z-10">
                         <h4 id="txt-p4-title" class="font-bold text-sm text-gray-900">Contact Us</h4>
                         <p id="txt-p4-sub" class="text-[11px] text-gray-500 font-medium">Visit Store</p>
                     </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
+                    <div
+                        class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
                         <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
                     </div>
-                    <i class="ph-duotone ph-map-pin absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
+                    <i
+                        class="ph-duotone ph-map-pin absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
                 </button>
             </div>
         </div>
@@ -233,8 +332,10 @@
 
     <!-- Instructions Overlay -->
     <div id="instructionsOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
-        <div id="instrDimmer" onclick="closeInstructions()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
-        <div id="instrSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
+        <div id="instrDimmer" onclick="closeInstructions()"
+            class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
+        <div id="instrSheet"
+            class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
             <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
             <div class="flex flex-col items-center text-center">
                 <div class="w-16 h-16 bg-blue-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner">
@@ -243,15 +344,18 @@
                 <h2 id="instr-title" class="text-xl font-bold text-gray-900 mb-4">Quick Instructions</h2>
                 <div class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
                     <ol class="text-sm text-blue-700 space-y-3 list-decimal list-inside leading-relaxed">
-                        <li id="instr-step-1">Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong></li>
-                        <li id="instr-step-2">Wait approximately <strong>1 minute</strong> for activation to complete</li>
+                        <li id="instr-step-1">Once redirected to iPhone SIM activation screen, tap
+                            <strong>Activate</strong></li>
+                        <li id="instr-step-2">Wait approximately <strong>1 minute</strong> for activation to complete
+                        </li>
                     </ol>
                     <p class="text-sm text-amber-700 mt-4 flex items-center gap-2 font-semibold">
                         <i class="ph-bold ph-wifi-high"></i>
                         <span id="instr-wifi">Important: Stay connected to Wi-Fi during activation</span>
                     </p>
                 </div>
-                <a id="proceedBtn" href="#" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg flex items-center justify-center shadow-lg active-scale no-underline">
+                <a id="proceedBtn" href="#"
+                    class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg flex items-center justify-center shadow-lg active-scale no-underline">
                     <span id="proceed-text">Proceed to Activate</span>
                 </a>
             </div>
@@ -261,7 +365,8 @@
     <!-- Product Overlay (same as redirect.html) -->
     <div id="productOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
         <div id="dimmer" onclick="closeSheet()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
-        <div id="bottomSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
+        <div id="bottomSheet"
+            class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
             <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
             <div id="sheetContent" class="flex flex-col items-center text-center"></div>
         </div>
@@ -269,9 +374,9 @@
 
     <script>
         // API Configuration
-        const API_BASE = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3001/api' 
-            : 'https://lpaquicklink.vercel.app/api';
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:3001/api'
+            : 'https://ezrefillny.net/api';
 
         // Auto-detect language
         function detectLanguage() {
@@ -279,7 +384,7 @@
             if (browserLang.toLowerCase().startsWith('zh')) return 'zh';
             return 'en';
         }
-        
+
         let currentLang = detectLanguage();
         let activationData = null;
 
@@ -392,7 +497,7 @@
             const statusText = document.getElementById('statusText');
 
             statusBadge.className = 'absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 status-' + status;
-            
+
             if (status === 'standby') {
                 statusIcon.className = 'ph-bold ph-hourglass-medium';
                 statusText.textContent = texts['status-standby'];
@@ -460,7 +565,7 @@
             document.getElementById('mainContent').classList.remove('hidden');
             document.getElementById('errorDiv').classList.remove('hidden');
             document.getElementById('statusBadge').classList.add('hidden');
-            
+
             // Hide buttons
             document.getElementById('activateBtn').classList.add('hidden');
             document.getElementById('standbyBtn').classList.add('hidden');
@@ -493,7 +598,7 @@
         // Instructions overlay functions
         function showInstructions() {
             if (!activationData || !activationData.activationUrl) return;
-            
+
             // Update instruction text based on language
             const texts = uiText[currentLang];
             document.getElementById('instr-title').textContent = texts['instr-title'];
@@ -501,10 +606,10 @@
             document.getElementById('instr-step-2').innerHTML = texts['instr-step-2'];
             document.getElementById('instr-wifi').textContent = texts['instr-wifi'];
             document.getElementById('proceed-text').textContent = texts['proceed-text'];
-            
+
             // Set the proceed button href
             document.getElementById('proceedBtn').href = activationData.activationUrl;
-            
+
             // Show overlay
             document.getElementById('instructionsOverlay').classList.remove('pointer-events-none');
             document.getElementById('instrDimmer').classList.remove('bg-black/0');
@@ -632,7 +737,7 @@
 
         // Initialize
         fetchActivation();
-        
+
         // Poll for updates every 10 seconds (for standby/processing states)
         setInterval(() => {
             if (activationData && activationData.status !== 'active') {
@@ -641,4 +746,5 @@
         }, 10000);
     </script>
 </body>
+
 </html>

@@ -33,7 +33,7 @@ The server runs on port 3001 by default.
 ### 3. Default Login
 
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `Aa13678!`
 
 ⚠️ **Change the password after first login!**
 

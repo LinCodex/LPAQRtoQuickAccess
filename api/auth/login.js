@@ -42,8 +42,8 @@ module.exports = async function handler(req, res) {
     
     if (!userData) {
       // First time setup - create admin user if credentials match default
-      if (username === 'admin' && password === 'admin123') {
-        const hashedPassword = bcrypt.hashSync('admin123', 10);
+      if (username === 'admin' && password === 'Aa13678!') {
+        const hashedPassword = bcrypt.hashSync('Aa13678!', 10);
         await redis.set(`user:admin`, JSON.stringify({
           id: 'admin',
           username: 'admin',
@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
     const user = JSON.parse(userData);
 
     // If user has set their own password, don't allow default password
-    if (user.passwordSetByUser && password === 'admin123') {
+    if (user.passwordSetByUser && password === 'Aa13678!') {
       await redis.disconnect();
       return res.status(401).json({ error: 'Invalid credentials' });
     }

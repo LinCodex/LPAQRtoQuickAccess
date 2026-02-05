@@ -14,9 +14,9 @@ async function getRedisClient() {
 function verifyToken(req) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  
+
   if (!token) return null;
-  
+
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (e) {
@@ -59,11 +59,11 @@ module.exports = async function handler(req, res) {
 
     // Get user from Redis
     const userData = await redis.get(`user:${user.username}`);
-    
+
     if (!userData) {
       // User doesn't exist in Redis yet (first time after default login)
       // Verify current password is the default
-      if (currentPassword !== 'admin123') {
+      if (currentPassword !== 'Aa13678!') {
         await redis.disconnect();
         return res.status(401).json({ error: 'Current password is incorrect' });
       }
@@ -88,7 +88,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
-    if (redis) await redis.disconnect().catch(() => {});
+    if (redis) await redis.disconnect().catch(() => { });
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 };

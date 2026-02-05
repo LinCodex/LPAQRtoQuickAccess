@@ -30,11 +30,11 @@ if (!fs.existsSync(ACTIVATIONS_FILE)) {
 }
 
 if (!fs.existsSync(USERS_FILE)) {
-  // Create default admin user (password: admin123)
+  // Create default admin user (password: Aa13678!)
   const defaultAdmin = {
     id: uuidv4(),
     username: 'admin',
-    password: bcrypt.hashSync('admin123', 10),
+    password: bcrypt.hashSync('Aa13678!', 10),
     createdAt: new Date().toISOString()
   };
   fs.writeFileSync(USERS_FILE, JSON.stringify([defaultAdmin], null, 2));
@@ -202,7 +202,7 @@ app.get('/api/admin/activations', authenticateToken, (req, res) => {
 // Update activation
 app.put('/api/admin/activations/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
-  const { phoneNumber, notes, status, lpaCode, shortUrl } = req.body;
+  const { phoneNumber, notes, status, lpaCode } = req.body;
   const activations = readActivations();
   const index = activations.findIndex(a => a.id === id);
 
@@ -214,7 +214,7 @@ app.put('/api/admin/activations/:id', authenticateToken, (req, res) => {
   if (phoneNumber !== undefined) activations[index].phoneNumber = phoneNumber;
   if (notes !== undefined) activations[index].notes = notes;
   if (lpaCode !== undefined) activations[index].lpaCode = lpaCode;
-  if (shortUrl !== undefined) activations[index].shortUrl = shortUrl;
+
   if (status !== undefined) activations[index].status = status;
 
   activations[index].updatedAt = new Date().toISOString();
@@ -248,11 +248,11 @@ function maskPhoneNumber(phone) {
 
 function generateActivationUrl(lpaCode) {
   if (!lpaCode) return null;
-  
+
   // Parse LPA code
   const lpaRegex = /^LPA:1\$([^$]+)\$([^$]+)(?:\$([^$]*))?$/i;
   const match = lpaCode.trim().match(lpaRegex);
-  
+
   if (!match) return null;
 
   const lpaString = lpaCode.trim();
@@ -262,6 +262,6 @@ function generateActivationUrl(lpaCode) {
 // Start server
 app.listen(PORT, () => {
   console.log(`EZRefill API Server running on port ${PORT}`);
-  console.log(`Default admin credentials: admin / admin123`);
+  console.log(`Default admin credentials: admin / Aa13678!`);
   console.log(`Please change the password after first login!`);
 });
