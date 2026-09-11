@@ -1,0 +1,1 @@
+The separate model viewer bundles Three.js and Meshopt and loads the Basis Universal transcoder. Their license texts are included here. Apple model and wallpaper provenance is recorded in the asset reports; those inputs are not covered by these software licenses.

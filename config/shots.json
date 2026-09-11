@@ -1,0 +1,9 @@
+{
+  "hero": ["front", "rear", "three-quarter", "exploded", "camera", "chip", "banner", "internal", "camera-unit", "camera-unit-rear", "camera-bay"],
+  "airpods": ["front", "closed", "rear", "bottom"],
+  "accessories": ["front", "charger-c-port", "charger-c-plug", "charger-a-port", "charger-a-plug", "cable-c-c", "cable-c-lightning", "cable-a-c", "cable-a-lightning"],
+  "connectivity": ["front"],
+  "activations": ["front"],
+  "topups": ["front"],
+  "phone-help": ["front"]
+}

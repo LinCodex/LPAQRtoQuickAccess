@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "blenderVersion": "5.2.1",
+  "seed": 170917,
+  "samples": 256,
+  "previewSamples": 32,
+  "noiseThreshold": 0.02,
+  "webpQuality": 82,
+  "hero": {
+    "desktop": {"count":240,"width":1600,"height":1200,"budgetMB":30},
+    "mobile": {"count":160,"width":900,"height":1200,"budgetMB":15},
+    "chapters":[{"start":0,"end":0.15,"label":"Made to connect"},{"start":0.15,"end":0.35,"label":"A brighter view"},{"start":0.35,"end":0.55,"label":"A19 Pro. At the heart."},{"start":0.55,"end":0.75,"label":"Every detail, closer"},{"start":0.75,"end":0.9,"label":"Beautiful from every side"},{"start":0.9,"end":1,"label":"Everything comes together"}]
+  },
+  "connectivity": {
+    "desktop":{"count":72,"width":1200,"height":900,"budgetMB":5},
+    "mobile":{"count":48,"width":720,"height":960,"budgetMB":3},
+    "chapters":[{"start":0,"end":0.5,"label":"SIM or eSIM"},{"start":0.5,"end":1,"label":"Your next connection"}]
+  },
+  "airpods": {
+    "desktop":{"count":120,"width":1200,"height":900,"budgetMB":10},
+    "mobile":{"count":80,"width":720,"height":960,"budgetMB":5},
+    "chapters":[{"start":0,"end":0.4,"label":"A little everyday escape"},{"start":0.4,"end":1,"label":"AirPods 4"}]
+  }
+}

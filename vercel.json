@@ -1,12 +1,13 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/lpascan",
-      "destination": "/index.html"
+      "destination": "/lpascan/index.html"
     },
     {
       "source": "/redirect",
-      "destination": "/redirect.html"
+      "destination": "/redirect/index.html"
     },
     {
       "source": "/activate",

@@ -1,0 +1,158 @@
+{
+  "brand": "EZRefill",
+  "phone": "+17185095888",
+  "address": "136-78 Roosevelt Ave, Flushing, NY",
+  "hours": "Every day, 10 AM–7 PM",
+  "plans": {
+    "dataMonthly": true,
+    "taxesIncluded": true,
+    "months": 6,
+    "h2oMonths": 4,
+    "options": [
+      {
+        "data": "500 MB",
+        "price": 100
+      },
+      {
+        "data": "4 GB",
+        "price": 120
+      },
+      {
+        "data": "8 GB",
+        "price": 132
+      },
+      {
+        "data": "12 GB",
+        "price": 180
+      },
+      {
+        "data": "24 GB",
+        "price": 190
+      },
+      {
+        "data": "40 GB",
+        "price": 225
+      },
+      {
+        "data": "60 GB",
+        "price": 235
+      },
+      {
+        "data": "Unlimited",
+        "price": 300
+      }
+    ],
+    "shortUnlimited": {
+      "months": 3,
+      "price": 155
+    },
+    "carrierRules": {
+      "tmobile": {
+        "months": 3,
+        "data": [
+          "Unlimited"
+        ],
+        "price": 120
+      },
+      "h2o": {
+        "months": 4,
+        "data": [
+          "4 GB",
+          "8 GB",
+          "12 GB",
+          "40 GB"
+        ]
+      },
+      "lyca": {
+        "months": 6,
+        "data": [
+          "500 MB",
+          "4 GB",
+          "8 GB",
+          "12 GB",
+          "24 GB",
+          "40 GB",
+          "60 GB"
+        ]
+      }
+    }
+  },
+  "carriers": [
+    {
+      "id": "tmobile",
+      "name": "T-Mobile Prepaid"
+    },
+    {
+      "id": "ultra",
+      "name": "Ultra Mobile"
+    },
+    {
+      "id": "h2o",
+      "name": "H2O Wireless"
+    },
+    {
+      "id": "lyca",
+      "name": "Lycamobile"
+    }
+  ],
+  "screenProtector": {
+    "price": 5,
+    "availability": "All phone models"
+  },
+  "phones": [
+    {
+      "id": "iphone13-128",
+      "model": "iphone13",
+      "name": "iPhone 13",
+      "storage": "128 GB",
+      "price": 500,
+      "condition": "New",
+      "finish": "Midnight"
+    },
+    {
+      "id": "iphone16promax-256",
+      "model": "iphone16promax",
+      "name": "iPhone 16 Pro Max",
+      "storage": "256 GB",
+      "price": 1300,
+      "condition": "New",
+      "finish": "Desert Titanium"
+    },
+    {
+      "id": "iphone17-256",
+      "model": "iphone17",
+      "name": "iPhone 17",
+      "storage": "256 GB",
+      "price": 1050,
+      "condition": "New",
+      "finish": "Lavender"
+    },
+    {
+      "id": "iphone17pro-256",
+      "model": "iphone17pro",
+      "name": "iPhone 17 Pro",
+      "storage": "256 GB",
+      "price": 1450,
+      "condition": "New",
+      "finish": "Cosmic Orange"
+    },
+    {
+      "id": "iphone17promax-256",
+      "model": "iphone17promax",
+      "name": "iPhone 17 Pro Max",
+      "storage": "256 GB",
+      "price": 1600,
+      "condition": "New",
+      "finish": "Cosmic Orange"
+    },
+    {
+      "id": "iphone17promax-512",
+      "model": "iphone17promax",
+      "name": "iPhone 17 Pro Max",
+      "storage": "512 GB",
+      "price": 1850,
+      "condition": "New",
+      "finish": "Cosmic Orange"
+    }
+  ]
+}
