@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/lpascan",
+      "destination": "/index.html"
+    },
+    {
       "source": "/redirect",
       "destination": "/redirect.html"
     },
