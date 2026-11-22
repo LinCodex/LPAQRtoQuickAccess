@@ -336,7 +336,6 @@ export const zh: Record<string, string> = {
   'One tap to download your eSIM profile.': '点一下按钮，直接把号码装进手机里。',
   'Ready to Install': '可以安装',
   'Checking Status': '正在检查状态…',
-  'Checking Status…': '正在检查状态…',
   'Link Unavailable': '链接不可用',
   'Direct Setup': '直接安装',
   'Encrypted': '安全连接',
