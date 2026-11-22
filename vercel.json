@@ -4,16 +4,17 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/store",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/phones.html",
       "destination": "/phones",
       "permanent": true
     }
   ],
   "rewrites": [
-    {
-      "source": "/store",
-      "destination": "/store/index.html"
-    },
     {
       "source": "/lpascan",
       "destination": "/lpascan/index.html"

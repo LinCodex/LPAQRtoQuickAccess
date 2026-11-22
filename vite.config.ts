@@ -9,7 +9,7 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 const CLEAN_ROUTE_MAP: Record<string, string> = {
-  '/store': '/store/index.html',
+  '/store': '/index.html',
   '/phones': '/phones/index.html',
   '/phones.html': '/phones/index.html',
   '/accessories': '/accessories/index.html',
@@ -86,7 +86,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve('index.html'),
-        store: resolve('store/index.html'),
         phones: resolve('phones/index.html'),
         airpods: resolve('accessories/airpods/index.html'),
         accessories: resolve('accessories/index.html'),
