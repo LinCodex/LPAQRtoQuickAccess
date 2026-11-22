@@ -1,11 +1,11 @@
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
+import crypto from 'node:crypto';
+import jwt from 'jsonwebtoken';
 
 const HTTPS_COOKIE_NAME = '__Host-ezrefill_session';
 const LOCAL_COOKIE_NAME = 'ezrefill_session';
 const ALLOWED_STATUSES = ['standby', 'processing', 'active'];
 
-function getJwtSecret() {
+export function getJwtSecret() {
   const secret = process.env.JWT_SECRET;
   if (!secret || typeof secret !== 'string' || secret.trim().length < 16) {
     throw new Error('JWT_SECRET environment variable must be configured');
@@ -13,7 +13,7 @@ function getJwtSecret() {
   return secret.trim();
 }
 
-function isHttpsRequest(req) {
+export function isHttpsRequest(req) {
   const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
   if (proto === 'https') return true;
   if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
@@ -23,7 +23,7 @@ function isHttpsRequest(req) {
   return false;
 }
 
-function isOriginAllowed(origin) {
+export function isOriginAllowed(origin) {
   if (!origin || typeof origin !== 'string') return false;
   const configured = new Set();
 
@@ -61,7 +61,7 @@ function isOriginAllowed(origin) {
   return false;
 }
 
-function applyCors(req, res, methods) {
+export function applyCors(req, res, methods) {
   const origin = req.headers.origin;
   res.setHeader('Vary', 'Origin');
   if (origin && isOriginAllowed(origin)) {
@@ -72,7 +72,7 @@ function applyCors(req, res, methods) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-function parseCookies(req) {
+export function parseCookies(req) {
   const header = req.headers.cookie;
   const cookies = {};
   if (!header || typeof header !== 'string') return cookies;
@@ -90,7 +90,7 @@ function parseCookies(req) {
   return cookies;
 }
 
-function getTokenFromRequest(req) {
+export function getTokenFromRequest(req) {
   const authHeader = req.headers.authorization;
   if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const bearer = authHeader.slice(7).trim();
@@ -100,7 +100,7 @@ function getTokenFromRequest(req) {
   return cookies[HTTPS_COOKIE_NAME] || cookies[LOCAL_COOKIE_NAME] || null;
 }
 
-function setSessionCookie(req, res, token, maxAgeSec = 86400) {
+export function setSessionCookie(req, res, token, maxAgeSec = 86400) {
   const secure = isHttpsRequest(req);
   const name = secure ? HTTPS_COOKIE_NAME : LOCAL_COOKIE_NAME;
   const parts = [
@@ -114,7 +114,7 @@ function setSessionCookie(req, res, token, maxAgeSec = 86400) {
   res.setHeader('Set-Cookie', parts.join('; '));
 }
 
-function clearSessionCookie(req, res) {
+export function clearSessionCookie(req, res) {
   const secure = isHttpsRequest(req);
   const cookies = [
     `${LOCAL_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`,
@@ -123,7 +123,7 @@ function clearSessionCookie(req, res) {
   res.setHeader('Set-Cookie', cookies);
 }
 
-function verifyToken(req) {
+export function verifyToken(req) {
   const token = getTokenFromRequest(req);
   if (!token) return null;
   try {
@@ -133,7 +133,7 @@ function verifyToken(req) {
   }
 }
 
-function getClientIp(req) {
+export function getClientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.trim()) {
     return forwarded.split(',')[0].trim();
@@ -141,7 +141,7 @@ function getClientIp(req) {
   return (req.socket && req.socket.remoteAddress) || 'unknown';
 }
 
-async function checkRateLimit(redis, bucketKey, maxAttempts, windowSec) {
+export async function checkRateLimit(redis, bucketKey, maxAttempts, windowSec) {
   try {
     const count = await redis.incr(bucketKey);
     if (count === 1) {
@@ -156,25 +156,25 @@ async function checkRateLimit(redis, bucketKey, maxAttempts, windowSec) {
   }
 }
 
-function timingSafeCompare(a, b) {
+export function timingSafeCompare(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
   const digestA = crypto.createHash('sha256').update(a).digest();
   const digestB = crypto.createHash('sha256').update(b).digest();
   return crypto.timingSafeEqual(digestA, digestB);
 }
 
-function validateId(id) {
+export function validateId(id) {
   return typeof id === 'string' && /^[A-Za-z0-9_-]{4,64}$/.test(id);
 }
 
-function validateLpaCode(code) {
+export function validateLpaCode(code) {
   if (typeof code !== 'string') return false;
   const trimmed = code.trim();
   if (trimmed.length === 0 || trimmed.length > 512) return false;
   return /^LPA:1\$[^$\s<>"]+\$[^$\s<>"]+(?:\$[^$\s<>"]*)?$/i.test(trimmed);
 }
 
-function parseLpaParts(code) {
+export function parseLpaParts(code) {
   const match = String(code || '').trim().match(/^(?:LPA:)?1\$([^$\s<>"]+)\$([^$\s<>"]+)(?:\$([^$\s<>"]*?))?(?:\$.*)?$/i);
   if (!match) return null;
   return {
@@ -184,16 +184,16 @@ function parseLpaParts(code) {
   };
 }
 
-function validateStatus(status) {
+export function validateStatus(status) {
   return typeof status === 'string' && ALLOWED_STATUSES.includes(status);
 }
 
-function sanitizeField(val, maxLen) {
+export function sanitizeField(val, maxLen) {
   if (typeof val !== 'string') return '';
   return val.trim().slice(0, maxLen);
 }
 
-function getPublicBaseUrl(req) {
+export function getPublicBaseUrl(req) {
   if (process.env.PUBLIC_BASE_URL) {
     return process.env.PUBLIC_BASE_URL.trim().replace(/\/+$/, '');
   }
@@ -204,22 +204,3 @@ function getPublicBaseUrl(req) {
   }
   return 'https://ezrefillny.net';
 }
-
-module.exports = {
-  getJwtSecret,
-  applyCors,
-  parseCookies,
-  getTokenFromRequest,
-  setSessionCookie,
-  clearSessionCookie,
-  verifyToken,
-  getClientIp,
-  checkRateLimit,
-  timingSafeCompare,
-  validateId,
-  validateLpaCode,
-  parseLpaParts,
-  validateStatus,
-  sanitizeField,
-  getPublicBaseUrl
-};

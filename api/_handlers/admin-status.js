@@ -1,17 +1,23 @@
-// Vercel Serverless Function - Authenticated Backend Health, Storage & Limit Status
-const { applyCors, verifyToken, getPublicBaseUrl } = require('../_lib/auth');
-const {
+// Handler - Authenticated Backend Health, Storage & Limit Status
+import { applyCors, verifyToken, getPublicBaseUrl } from '../_lib/auth.js';
+import {
   getRedisConfig,
   getRedisClient,
   closeRedisClient,
   isRedisUnavailableError
-} = require('../_lib/redis');
+} from '../_lib/redis.js';
+import {
+  HISTORY_MAX_ENTRIES,
+  BYTES_PER_MIB,
+  getCleanupConfig,
+  parseRedisInfoMemory,
+  resolveLimitBytes,
+  getLastCleanupReport
+} from '../_lib/cleanup.js';
 
-const HISTORY_LIMIT = 500;
 const SHORTLINK_TTL_DAYS = 30;
 const SHORTLINK_SCAN_CAP = 2000;
 const USER_SCAN_CAP = 100;
-const BYTES_PER_MIB = 1024 * 1024;
 
 function buildEnvStatus(redisConfig) {
   const jwtVal = typeof process.env.JWT_SECRET === 'string' ? process.env.JWT_SECRET.trim() : '';
@@ -71,34 +77,6 @@ function sanitizeDbError(err, hasUrl) {
   return safeMsg || 'Unable to reach Redis database';
 }
 
-function resolveLimitBytes(provider, maxMemoryParsed) {
-  if (Number.isFinite(maxMemoryParsed) && maxMemoryParsed > 0) {
-    return { limitBytes: maxMemoryParsed, limitSource: 'redis-maxmemory' };
-  }
-  const envMb = Number(process.env.REDIS_MAX_MEMORY_MB);
-  if (Number.isFinite(envMb) && envMb > 0) {
-    return { limitBytes: Math.round(envMb * BYTES_PER_MIB), limitSource: 'env-configured' };
-  }
-  if (provider === 'Upstash Redis') {
-    return { limitBytes: 256 * BYTES_PER_MIB, limitSource: 'plan-default' };
-  }
-  return { limitBytes: 30 * BYTES_PER_MIB, limitSource: 'plan-default' };
-}
-
-function parseRedisInfoMemory(infoText) {
-  if (typeof infoText !== 'string' || !infoText) {
-    return { usedMemory: null, maxMemory: null, evictionPolicy: null };
-  }
-  const usedMatch = infoText.match(/^used_memory:(\d+)/m);
-  const maxMatch = infoText.match(/^maxmemory:(\d+)/m);
-  const policyMatch = infoText.match(/^maxmemory_policy:([^\r\n]+)/m);
-  return {
-    usedMemory: usedMatch ? Number(usedMatch[1]) : null,
-    maxMemory: maxMatch ? Number(maxMatch[1]) : null,
-    evictionPolicy: policyMatch ? policyMatch[1].trim() : null
-  };
-}
-
 function buildLimitsAndOverall(database, records, envMeta) {
   const storagePercent =
     database.limitBytes && database.limitBytes > 0
@@ -114,7 +92,7 @@ function buildLimitsAndOverall(database, records, envMeta) {
     storageStatus = 'warning';
   }
 
-  const historyPercent = Number(((records.history.total / HISTORY_LIMIT) * 100).toFixed(2));
+  const historyPercent = Number(((records.history.total / HISTORY_MAX_ENTRIES) * 100).toFixed(2));
   let historyStatus = 'healthy';
   if (records.history.total >= 475) {
     historyStatus = 'critical';
@@ -176,9 +154,9 @@ function buildLimitsAndOverall(database, records, envMeta) {
       id: 'history',
       label: 'Generated History Cap',
       status: historyStatus,
-      detail: `${records.history.total} / ${HISTORY_LIMIT} entries stored`,
+      detail: `${records.history.total} / ${HISTORY_MAX_ENTRIES} entries stored`,
       used: records.history.total,
-      limit: HISTORY_LIMIT,
+      limit: HISTORY_MAX_ENTRIES,
       unit: 'records',
       percent: historyPercent
     },
@@ -204,7 +182,7 @@ function buildLimitsAndOverall(database, records, envMeta) {
   return { overall, storagePercent, limits };
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -223,6 +201,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   const redisConfig = getRedisConfig();
+  const cleanupConfig = getCleanupConfig();
   const envMeta = buildEnvStatus(redisConfig);
   const runtime = {
     platform: 'vercel',
@@ -237,7 +216,7 @@ module.exports = async function handler(req, res) {
 
   const records = {
     activations: { total: 0, standby: 0, processing: 0, active: 0, bytes: 0 },
-    history: { total: 0, limit: HISTORY_LIMIT, bytes: 0 },
+    history: { total: 0, limit: HISTORY_MAX_ENTRIES, bytes: 0 },
     shortlinks: { total: 0, bytes: 0, ttlDays: SHORTLINK_TTL_DAYS },
     users: { total: 0, hasAdmin: false, usingDefaultPassword: false }
   };
@@ -257,6 +236,7 @@ module.exports = async function handler(req, res) {
     errorMessage: null
   };
 
+  let lastCleanup = null;
   let redis = null;
 
   try {
@@ -266,14 +246,16 @@ module.exports = async function handler(req, res) {
     database.latencyMs = Math.max(1, Date.now() - startMs);
     database.status = 'connected';
 
-    const [dbSizeVal, infoMemoryStr, activationIds, historyIds, adminUserRaw] = await Promise.all([
+    const [dbSizeVal, infoMemoryStr, activationIds, historyIds, adminUserRaw, cleanupReport] = await Promise.all([
       redis.dbSize().catch(() => null),
       redis.info('memory').catch(() => null),
       redis.sMembers('activations').catch(() => []),
       redis.sMembers('history:esim:ids').catch(() => []),
-      redis.get('user:admin').catch(() => null)
+      redis.get('user:admin').catch(() => null),
+      getLastCleanupReport(redis)
     ]);
 
+    lastCleanup = cleanupReport;
     database.totalKeys = typeof dbSizeVal === 'number' ? dbSizeVal : null;
     const parsedMem = parseRedisInfoMemory(infoMemoryStr);
     database.evictionPolicy = parsedMem.evictionPolicy;
@@ -363,9 +345,10 @@ module.exports = async function handler(req, res) {
     redis = null;
   } catch (error) {
     await closeRedisClient(redis);
-    database.status = !redisConfig.url || isRedisUnavailableError(error) && error.code === 'REDIS_NOT_CONFIGURED'
-      ? 'unconfigured'
-      : 'error';
+    database.status =
+      !redisConfig.url || (isRedisUnavailableError(error) && error.code === 'REDIS_NOT_CONFIGURED')
+        ? 'unconfigured'
+        : 'error';
     database.errorMessage = sanitizeDbError(error, Boolean(redisConfig.url));
   }
 
@@ -379,6 +362,12 @@ module.exports = async function handler(req, res) {
     database,
     records,
     env: envMeta.list,
-    limits
+    limits,
+    autoCleanup: {
+      enabled: cleanupConfig.enabled,
+      thresholdPercent: cleanupConfig.thresholdPercent,
+      targetPercent: cleanupConfig.targetPercent,
+      lastRun: lastCleanup
+    }
   });
-};
+}

@@ -1,8 +1,8 @@
-// Vercel Serverless Function - Get activation status (public)
-const { applyCors, validateId, validateLpaCode } = require('../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
+// Handler - Get activation status (public)
+import { applyCors, validateId, validateLpaCode } from '../_lib/auth.js';
+import { getRedisClient, closeRedisClient, isRedisUnavailableError } from '../_lib/redis.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -59,4 +59,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

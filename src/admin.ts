@@ -82,6 +82,17 @@ interface SystemStatusResponse {
     unit: string | null;
     percent: number | null;
   }>;
+  autoCleanup?: {
+    enabled: boolean;
+    thresholdPercent: number;
+    targetPercent: number;
+    lastRun: {
+      ranAt: string;
+      reason: string;
+      totalDeleted: number;
+      freedBytesEstimate: number;
+    } | null;
+  };
 }
 
 const isLocalApi = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -149,6 +160,8 @@ const statusStorageNote = document.getElementById('status-storage-note');
 const statusHistoryMeter = document.getElementById('status-history-meter') as HTMLProgressElement | null;
 const statusHistorySummary = document.getElementById('status-history-summary');
 const statusLimitsList = document.getElementById('status-limits-list');
+const statusCleanupSummary = document.getElementById('status-cleanup-summary');
+const statusCleanupBtn = document.getElementById('status-cleanup-btn') as HTMLButtonElement | null;
 const statusBackendDl = document.getElementById('status-backend-dl');
 const statusDataGrid = document.getElementById('status-data-grid');
 const statusEnvList = document.getElementById('status-env-list');
@@ -1249,6 +1262,40 @@ function renderSystemStatus(data: SystemStatusResponse) {
     }
   }
 
+  // Auto-cleanup policy & last-run summary
+  if (statusCleanupSummary) {
+    const policy = data.autoCleanup || {
+      enabled: true,
+      thresholdPercent: 80,
+      targetPercent: 65,
+      lastRun: null
+    };
+    statusCleanupSummary.replaceChildren();
+    const policySpan = document.createElement('span');
+    policySpan.textContent = `Auto-clean enabled at ${policy.thresholdPercent}% (target ${policy.targetPercent}%)`;
+    statusCleanupSummary.append(policySpan);
+
+    if (policy.lastRun) {
+      const sepSpan = document.createElement('span');
+      sepSpan.textContent = ' · Last run: ';
+      const timeSpan = document.createElement('span');
+      timeSpan.setAttribute('data-no-translate', '');
+      timeSpan.textContent = formatDate(policy.lastRun.ranAt, true);
+      const countOpen = document.createElement('span');
+      countOpen.setAttribute('data-no-translate', '');
+      countOpen.textContent = ` (${policy.lastRun.totalDeleted} `;
+      const removedLbl = document.createElement('span');
+      removedLbl.textContent = 'removed';
+      const freedClose = document.createElement('span');
+      freedClose.setAttribute('data-no-translate', '');
+      freedClose.textContent = `, ${formatBytes(policy.lastRun.freedBytesEstimate)})`;
+      statusCleanupSummary.append(sepSpan, timeSpan, countOpen, removedLbl, freedClose);
+    }
+  }
+  if (statusCleanupBtn) {
+    statusCleanupBtn.disabled = data.database.status !== 'connected';
+  }
+
   // Backend & Database Health <dl>
   if (statusBackendDl) {
     statusBackendDl.replaceChildren();
@@ -1585,6 +1632,39 @@ function selectWorkspaceTab(
 
 statusRefreshBtn?.addEventListener('click', () => {
   void loadSystemStatus(false);
+});
+
+statusCleanupBtn?.addEventListener('click', async () => {
+  if (!statusCleanupBtn || statusCleanupBtn.disabled) return;
+  statusCleanupBtn.disabled = true;
+  statusCleanupBtn.textContent = 'Cleaning…';
+  try {
+    const res = await apiFetch('/admin/cleanup', { method: 'POST' });
+    if (res.status === 401 || res.status === 403) {
+      clearStoredToken();
+      showLogin();
+      return;
+    }
+    if (!res.ok) {
+      showError(dashboardError, 'Storage cleanup failed.');
+      return;
+    }
+    const report = (await res.json()) as { totalDeleted?: number };
+    const removed = Number(report.totalDeleted || 0);
+    showToast(
+      removed > 0
+        ? t('Storage cleanup complete.')
+        : t('Storage already within limits.')
+    );
+    await loadSystemStatus(false);
+  } catch {
+    showError(dashboardError, 'Network error while running storage cleanup.');
+  } finally {
+    if (statusCleanupBtn) {
+      statusCleanupBtn.disabled = Boolean(lastStatusData && lastStatusData.database.status !== 'connected');
+      statusCleanupBtn.textContent = 'Run Cleanup';
+    }
+  }
 });
 
 workspaceTabs.forEach((tab, idx) => {

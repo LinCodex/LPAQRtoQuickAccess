@@ -1,14 +1,14 @@
-// Vercel Serverless Function - Reset Password using configured reset token
-const bcrypt = require('bcryptjs');
-const {
+// Handler - Reset Password using configured reset token
+import bcrypt from 'bcryptjs';
+import {
   applyCors,
   getClientIp,
   checkRateLimit,
   timingSafeCompare
-} = require('../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
+} from '../_lib/auth.js';
+import { getRedisClient, closeRedisClient, isRedisUnavailableError } from '../_lib/redis.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -93,4 +93,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

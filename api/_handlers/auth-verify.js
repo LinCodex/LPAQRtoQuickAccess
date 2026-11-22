@@ -1,7 +1,7 @@
-// Vercel Serverless Function - Verify token
-const { applyCors, verifyToken } = require('../_lib/auth');
+// Handler - Verify token
+import { applyCors, verifyToken } from '../_lib/auth.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -18,4 +18,4 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json({ valid: true, username: user.username });
-};
+}

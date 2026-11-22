@@ -1,4 +1,4 @@
-const { createClient } = require('redis');
+import { createClient } from 'redis';
 
 const DEFAULT_CONNECT_TIMEOUT_MS = 4500;
 const AVAILABILITY_ERROR_CODES = new Set([
@@ -14,7 +14,7 @@ const AVAILABILITY_ERROR_CODES = new Set([
  * Resolve Redis connection URL and provider label from environment variables.
  * Never returns or logs raw credentials externally.
  */
-function getRedisConfig() {
+export function getRedisConfig() {
   const candidates = [
     ['REDIS_URL', process.env.REDIS_URL],
     ['KV_URL', process.env.KV_URL]
@@ -37,7 +37,7 @@ function getRedisConfig() {
 /**
  * Connect a Redis client with bounded timeout and safe error listener.
  */
-async function getRedisClient(opts = {}) {
+export async function getRedisClient(opts = {}) {
   const { url } = getRedisConfig();
   if (!url) {
     const err = new Error('Redis database is not configured');
@@ -62,7 +62,7 @@ async function getRedisClient(opts = {}) {
 /**
  * Gracefully close a Redis client without throwing if already disconnected.
  */
-async function closeRedisClient(client) {
+export async function closeRedisClient(client) {
   if (!client) return;
   try {
     if (client.isOpen) {
@@ -78,7 +78,7 @@ async function closeRedisClient(client) {
 /**
  * Identify errors caused by missing Redis config or unreachable sockets.
  */
-function isRedisUnavailableError(err) {
+export function isRedisUnavailableError(err) {
   if (!err || typeof err !== 'object') return false;
   if (err.code && AVAILABILITY_ERROR_CODES.has(String(err.code))) {
     return true;
@@ -95,10 +95,3 @@ function isRedisUnavailableError(err) {
     msg.includes('ECONNRESET')
   );
 }
-
-module.exports = {
-  getRedisConfig,
-  getRedisClient,
-  closeRedisClient,
-  isRedisUnavailableError
-};

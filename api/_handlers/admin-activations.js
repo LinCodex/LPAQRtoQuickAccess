@@ -1,15 +1,21 @@
-// Vercel Serverless Function - List/Create activations (authenticated)
-const { v4: uuidv4 } = require('uuid');
-const {
+// Handler - List/Create activations (authenticated)
+import { v4 as uuidv4 } from 'uuid';
+import {
   applyCors,
   verifyToken,
   validateLpaCode,
   validateStatus,
   sanitizeField
-} = require('../../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../../_lib/redis');
+} from '../_lib/auth.js';
+import {
+  getRedisConfig,
+  getRedisClient,
+  closeRedisClient,
+  isRedisUnavailableError
+} from '../_lib/redis.js';
+import { autoCleanupIfNeeded } from '../_lib/cleanup.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -70,6 +76,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
+      const { provider } = getRedisConfig();
       redis = await getRedisClient();
 
       const id = uuidv4().split('-')[0];
@@ -87,6 +94,7 @@ module.exports = async function handler(req, res) {
 
       await redis.set(`activation:${id}`, JSON.stringify(activation));
       await redis.sAdd('activations', id);
+      await autoCleanupIfNeeded(redis, provider);
 
       await closeRedisClient(redis);
       return res.status(201).json(activation);
@@ -101,4 +109,4 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}

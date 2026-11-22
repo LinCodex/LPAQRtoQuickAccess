@@ -1,17 +1,21 @@
-// Vercel Serverless Function - List / Create / Clear Generated eSIM History
-const { v4: uuidv4 } = require('uuid');
-const {
+// Handler - List / Create / Clear Generated eSIM History (authenticated)
+import { v4 as uuidv4 } from 'uuid';
+import {
   applyCors,
   verifyToken,
   validateLpaCode,
   parseLpaParts,
   sanitizeField
-} = require('../../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../../_lib/redis');
+} from '../_lib/auth.js';
+import {
+  getRedisConfig,
+  getRedisClient,
+  closeRedisClient,
+  isRedisUnavailableError
+} from '../_lib/redis.js';
+import { HISTORY_MAX_ENTRIES, autoCleanupIfNeeded } from '../_lib/cleanup.js';
 
-const HISTORY_MAX_ENTRIES = 500;
-
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,POST,DELETE,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -70,6 +74,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
+      const { provider } = getRedisConfig();
       redis = await getRedisClient();
 
       const id = uuidv4().split('-')[0];
@@ -87,7 +92,6 @@ module.exports = async function handler(req, res) {
       await redis.set(`history:esim:${id}`, JSON.stringify(entry));
       await redis.sAdd('history:esim:ids', id);
 
-      // Keep history bounded at 500 entries so Redis storage cannot grow unbounded
       const ids = await redis.sMembers('history:esim:ids');
       if (ids && ids.length > HISTORY_MAX_ENTRIES) {
         const rawList = await redis.mGet(ids.map((itemId) => `history:esim:${itemId}`));
@@ -116,6 +120,7 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      await autoCleanupIfNeeded(redis, provider);
       await closeRedisClient(redis);
       return res.status(201).json(entry);
     } catch (error) {
@@ -149,4 +154,4 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}

@@ -1,9 +1,9 @@
-// Vercel Serverless Function - Change Password
-const bcrypt = require('bcryptjs');
-const { applyCors, verifyToken } = require('../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
+// Handler - Change Password
+import bcrypt from 'bcryptjs';
+import { applyCors, verifyToken } from '../_lib/auth.js';
+import { getRedisClient, closeRedisClient, isRedisUnavailableError } from '../_lib/redis.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -65,4 +65,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

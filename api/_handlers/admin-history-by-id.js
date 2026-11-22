@@ -1,12 +1,8 @@
-// Vercel Serverless Function - Delete Single Generated eSIM History Entry
-const {
-  applyCors,
-  verifyToken,
-  validateId
-} = require('../../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../../_lib/redis');
+// Handler - Delete Single Generated eSIM History Entry (authenticated)
+import { applyCors, verifyToken, validateId } from '../_lib/auth.js';
+import { getRedisClient, closeRedisClient, isRedisUnavailableError } from '../_lib/redis.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'DELETE,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -49,4 +45,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

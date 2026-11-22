@@ -740,7 +740,17 @@ export const zh: Record<string, string> = {
   'A required backend service or storage limit needs immediate attention.':
     '有必填的后端服务未就绪或存储已接近上限，请尽快处理。',
   'One or more backend checks reported a warning below.': '下面有一项或多项状态提示需要留意。',
-  'Could not load system status from backend.': '暂时无法从后端读取系统状态。'
+  'Could not load system status from backend.': '暂时无法从后端读取系统状态。',
+  'Auto-Cleanup Policy': '自动清理策略',
+  'Auto-clean triggers at 80% storage usage.': '存储空间达到 80% 时自动清理旧数据。',
+  'Run Cleanup': '立即清理',
+  'Cleaning…': '清理中…',
+  'removed': '条已清理',
+  'Storage cleanup complete.': '存储空间清理完成。',
+  'Storage already within limits.': '当前存储占用正常，无需清理。',
+  'Storage cleanup failed.': '存储清理没成功。',
+  'Network error while running storage cleanup.': '执行存储清理时网络出错。',
+  '· Last run:': '· 上次清理：'
 };
 
 export function translate(value: string): string {
@@ -766,6 +776,7 @@ export function translate(value: string): string {
 
   return value
     .replace(/^Last checked:$/, '上次检查：')
+    .replace(/^Auto-clean enabled at (\d+)% \(target (\d+)%\)$/, '达到 $1% 自动清理（目标降至 $2%）')
     .replace(/^Connected \(([^)]+) ping\)$/, '已连接（延迟 $1）')
     .replace(/^Local JSON store ready \(([^)]+) read\)$/, '本地 JSON 存储正常（读取 $1）')
     .replace(/^(\d+(?:\.\d+)?)% of (\d+) MiB limit$/, '已用 $1%（上限 $2 MiB）')

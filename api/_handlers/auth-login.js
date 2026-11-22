@@ -1,22 +1,22 @@
-// Vercel Serverless Function - Login
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const {
+// Handler - Login
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import {
   getJwtSecret,
   applyCors,
   setSessionCookie,
   getClientIp,
   checkRateLimit,
   timingSafeCompare
-} = require('../_lib/auth');
-const {
+} from '../_lib/auth.js';
+import {
   getRedisConfig,
   getRedisClient,
   closeRedisClient,
   isRedisUnavailableError
-} = require('../_lib/redis');
+} from '../_lib/redis.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -122,4 +122,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}

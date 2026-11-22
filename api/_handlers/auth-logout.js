@@ -1,7 +1,7 @@
-// Vercel Serverless Function - Logout
-const { applyCors, clearSessionCookie } = require('../_lib/auth');
+// Handler - Logout
+import { applyCors, clearSessionCookie } from '../_lib/auth.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -15,4 +15,4 @@ module.exports = async function handler(req, res) {
   clearSessionCookie(req, res);
   res.setHeader('Clear-Site-Data', '"cookies", "storage"');
   return res.status(200).json({ message: 'Logged out' });
-};
+}

@@ -564,6 +564,8 @@ function getFileBytesSafe(filePath) {
   }
 }
 
+let lastLocalCleanupRun = null;
+
 app.get('/api/admin/status', authenticateToken, (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const startMs = Date.now();
@@ -774,8 +776,82 @@ app.get('/api/admin/status', authenticateToken, (req, res) => {
         note: 'Canonical public URL (defaults to request host / ezrefillny.net)'
       }
     ],
-    limits
+    limits,
+    autoCleanup: {
+      enabled: true,
+      thresholdPercent: 80,
+      targetPercent: 65,
+      lastRun: lastLocalCleanupRun
+    }
   });
+});
+
+app.post('/api/admin/cleanup', authenticateToken, (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const HISTORY_LIMIT = 500;
+  const SOFT_CAP_BYTES = 30 * 1024 * 1024;
+  const SHORTLINK_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+  const beforeBytes =
+    getFileBytesSafe(ACTIVATIONS_FILE) +
+    getFileBytesSafe(HISTORY_FILE) +
+    getFileBytesSafe(SHORTLINKS_FILE) +
+    getFileBytesSafe(USERS_FILE);
+  const usageBeforePercent = Number(((beforeBytes / SOFT_CAP_BYTES) * 100).toFixed(2));
+
+  let removedHistory = 0;
+  const historyList = readHistory();
+  if (Array.isArray(historyList) && historyList.length > HISTORY_LIMIT) {
+    historyList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    removedHistory = historyList.length - HISTORY_LIMIT;
+    writeHistory(historyList.slice(0, HISTORY_LIMIT));
+  }
+
+  let removedShortlinks = 0;
+  const shortLinksObj = readShortLinks();
+  if (shortLinksObj && typeof shortLinksObj === 'object') {
+    const nowMs = Date.now();
+    for (const [id, entry] of Object.entries(shortLinksObj)) {
+      const createdMs = entry && entry.createdAt ? Date.parse(entry.createdAt) : NaN;
+      if (Number.isFinite(createdMs) && nowMs - createdMs >= SHORTLINK_TTL_MS) {
+        delete shortLinksObj[id];
+        removedShortlinks += 1;
+      }
+    }
+    if (removedShortlinks > 0) {
+      writeShortLinks(shortLinksObj);
+    }
+  }
+
+  const afterBytes =
+    getFileBytesSafe(ACTIVATIONS_FILE) +
+    getFileBytesSafe(HISTORY_FILE) +
+    getFileBytesSafe(SHORTLINKS_FILE) +
+    getFileBytesSafe(USERS_FILE);
+  const usageAfterPercent = Number(((afterBytes / SOFT_CAP_BYTES) * 100).toFixed(2));
+  const totalDeleted = removedHistory + removedShortlinks;
+  const freedBytesEstimate = Math.max(0, beforeBytes - afterBytes);
+
+  const report = {
+    ranAt: new Date().toISOString(),
+    reason: 'manual',
+    thresholdPercent: 80,
+    targetPercent: 65,
+    usageBeforePercent,
+    usageAfterPercent,
+    deleted: {
+      orphans: 0,
+      ratelimits: 0,
+      history: removedHistory,
+      shortlinks: removedShortlinks,
+      activations: 0
+    },
+    totalDeleted,
+    freedBytesEstimate
+  };
+
+  lastLocalCleanupRun = report;
+  res.json(report);
 });
 
 // ============ HELPER FUNCTIONS ============

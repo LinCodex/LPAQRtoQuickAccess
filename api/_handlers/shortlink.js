@@ -1,7 +1,13 @@
-// Vercel Serverless Function - Create short link
-const crypto = require('crypto');
-const { applyCors, validateLpaCode, getPublicBaseUrl } = require('../_lib/auth');
-const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
+// Handler - Create short link
+import crypto from 'node:crypto';
+import { applyCors, validateLpaCode, getPublicBaseUrl } from '../_lib/auth.js';
+import {
+  getRedisConfig,
+  getRedisClient,
+  closeRedisClient,
+  isRedisUnavailableError
+} from '../_lib/redis.js';
+import { autoCleanupIfNeeded } from '../_lib/cleanup.js';
 
 const BASE62_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 
@@ -14,7 +20,7 @@ function generateShortId() {
   return result;
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   applyCors(req, res, 'GET,POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -35,6 +41,7 @@ module.exports = async function handler(req, res) {
   let redis;
 
   try {
+    const { provider } = getRedisConfig();
     redis = await getRedisClient();
 
     let shortId = generateShortId();
@@ -46,6 +53,7 @@ module.exports = async function handler(req, res) {
     }
 
     await redis.set(`shortlink:${shortId}`, normalizedLpa, { EX: 60 * 60 * 24 * 30 });
+    await autoCleanupIfNeeded(redis, provider);
     await closeRedisClient(redis);
 
     const domain = getPublicBaseUrl(req);
@@ -63,4 +71,4 @@ module.exports = async function handler(req, res) {
     }
     return res.status(500).json({ error: 'Internal server error' });
   }
-};
+}
