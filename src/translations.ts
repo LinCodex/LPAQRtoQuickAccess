@@ -264,6 +264,8 @@ export const zh: Record<string, string> = {
   'Point camera at an eSIM QR code or tap Start Camera.': '点“打开相机”，对准 eSIM 二维码扫一下就行。',
   'Starting camera…': '正在打开相机…',
   'Camera active. Point at eSIM QR code.': '相机开好了，对准 eSIM 二维码即可。',
+  'QR code scanned — camera paused. Clear / Reset to scan again.': '已扫出二维码 — 相机已暂停，点“清空 / 重置”或刷新可继续扫。',
+  'QR code scanned — camera paused. Scan Another Code to resume.': '已扫出二维码 — 相机已暂停，点“再扫一个二维码”或刷新可继续扫。',
   'Camera unavailable. You can upload an image or enter manually below.': '开不了相机也没事，可以传张二维码图片或者在下面手动填。',
   'Start Camera': '打开相机',
   'Stop Camera': '关掉相机',

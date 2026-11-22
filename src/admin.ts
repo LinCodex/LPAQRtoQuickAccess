@@ -285,10 +285,82 @@ let modalScannerActive = false;
 
 let qlScanner: Html5Qrcode | null = null;
 let qlScannerActive = false;
+let qlScannerPaused = false;
+let qlScannerStarting = false;
 let currentQlLpa: LpaData | null = null;
 let currentQlPhone = '';
 let qlQrMode: 'redirect' | 'raw' = 'redirect';
 let qlQrStatusTimer = 0;
+
+const CAMERA_GRANTED_KEY = 'ezrefill_camera_granted';
+const mobileCameraQuery = window.matchMedia('(max-width: 767px), (hover: none) and (pointer: coarse)');
+const qlScannerContainer = document.querySelector('#ql-camera-section .lpa-scanner-container') as HTMLElement | null;
+
+function markCameraPermissionGranted() {
+  try {
+    localStorage.setItem(CAMERA_GRANTED_KEY, 'true');
+  } catch {
+    // Ignore storage restrictions
+  }
+}
+
+function clearCameraPermissionIfDenied(err: unknown) {
+  const errObj = err as { name?: string; message?: string } | string | null;
+  const text = typeof errObj === 'string' ? errObj : `${errObj?.name || ''} ${errObj?.message || ''}`;
+  if (/NotAllowedError|PermissionDenied|permission denied/i.test(text)) {
+    try {
+      localStorage.removeItem(CAMERA_GRANTED_KEY);
+    } catch {
+      // Ignore storage restrictions
+    }
+  }
+}
+
+async function hasPreviousCameraPermission(): Promise<boolean> {
+  if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+    return false;
+  }
+  let storedGrant = false;
+  try {
+    storedGrant = localStorage.getItem(CAMERA_GRANTED_KEY) === 'true';
+  } catch {
+    // Ignore storage restrictions
+  }
+
+  if (navigator.permissions && typeof navigator.permissions.query === 'function') {
+    try {
+      const perm = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      if (perm.state === 'granted') {
+        markCameraPermissionGranted();
+        return true;
+      }
+      if (perm.state === 'denied') {
+        try {
+          localStorage.removeItem(CAMERA_GRANTED_KEY);
+        } catch {
+          // Ignore storage restrictions
+        }
+        return false;
+      }
+    } catch {
+      // Ignore browsers where 'camera' permission query is unsupported
+    }
+  }
+
+  if (typeof navigator.mediaDevices.enumerateDevices === 'function') {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      if (devices.some((d) => d.kind === 'videoinput' && Boolean(d.label && d.label.trim()))) {
+        markCameraPermissionGranted();
+        return true;
+      }
+    } catch {
+      // Ignore enumerateDevices errors
+    }
+  }
+
+  return storedGrant;
+}
 
 const hasScreenCapture = Boolean(navigator.mediaDevices && 'getDisplayMedia' in navigator.mediaDevices);
 if (!hasScreenCapture) {
@@ -896,6 +968,7 @@ function showDashboard(username: string) {
   void loadActivations().then(() => startAutoRefresh());
   void loadHistory();
   void loadSystemStatus(true);
+  void maybeAutoStartQlScanner();
 }
 
 // Generated eSIM History Controllers
@@ -1627,6 +1700,9 @@ function selectWorkspaceTab(
   if (nextTab === tabStatus && (!lastStatusData || Date.now() - statusFetchedAtMs > 30000)) {
     void loadSystemStatus(false);
   }
+  if (nextTab === tabQuicklink) {
+    void maybeAutoStartQlScanner();
+  }
   if (moveFocus) nextTab.focus();
 }
 
@@ -1980,8 +2056,10 @@ adminQrScanBtn.addEventListener('click', async () => {
       () => {}
     );
     modalScannerActive = true;
+    markCameraPermissionGranted();
     adminQrStatus.textContent = 'Point camera at LPA QR code.';
-  } catch {
+  } catch (err) {
+    clearCameraPermissionIfDenied(err);
     adminQrStatus.textContent = 'Camera unavailable or permission denied.';
     modalScannerActive = false;
     adminQrScanBtn.textContent = 'Scan QR';
@@ -2175,6 +2253,26 @@ async function displayQlResult(lpa: LpaData, phone?: string, recordHistory = tru
   }
 }
 
+function pauseQlScanner() {
+  if (!qlScanner || !qlScannerActive || qlScannerPaused) return;
+  qlScannerPaused = true;
+  try {
+    qlScanner.pause(true);
+  } catch {
+    // Ignore pause transition errors
+  }
+  qlScannerContainer?.classList.add('is-paused');
+  if (qlScannerStatus) {
+    qlScannerStatus.textContent = 'QR code scanned — camera paused. Clear / Reset to scan again.';
+  }
+  if (qlCameraStartBtn) {
+    qlCameraStartBtn.hidden = true;
+  }
+  if (qlOverlayState) {
+    qlOverlayState.hidden = false;
+  }
+}
+
 async function stopQlScanner() {
   if (qlScanner && qlScannerActive) {
     try {
@@ -2189,17 +2287,30 @@ async function stopQlScanner() {
     }
   }
   qlScannerActive = false;
+  qlScannerPaused = false;
+  qlScannerContainer?.classList.remove('is-paused');
   const readerEl = document.getElementById('ql-qr-reader');
   if (readerEl) readerEl.replaceChildren();
+  if (qlScannerStatus) {
+    qlScannerStatus.textContent = 'Point camera at an eSIM QR code or tap Start Camera.';
+  }
+  if (qlCameraStartBtn) {
+    qlCameraStartBtn.hidden = false;
+  }
   if (qlOverlayState) qlOverlayState.hidden = false;
   if (qlCameraStopBar) qlCameraStopBar.hidden = true;
 }
 
-qlCameraStartBtn?.addEventListener('click', async () => {
+async function startQlScanner() {
+  if (qlScannerStarting) return;
+  qlScannerStarting = true;
   await stopQlScanner();
   clearError(qlErrorBox);
   if (qlScannerStatus) qlScannerStatus.textContent = 'Starting camera…';
-  if (qlCameraStartBtn) qlCameraStartBtn.disabled = true;
+  if (qlCameraStartBtn) {
+    qlCameraStartBtn.hidden = false;
+    qlCameraStartBtn.disabled = true;
+  }
 
   try {
     qlScanner = new Html5Qrcode('ql-qr-reader', {
@@ -2211,9 +2322,10 @@ qlCameraStartBtn?.addEventListener('click', async () => {
       { facingMode: 'environment' },
       { fps: 18, qrbox: getResponsiveQrBox },
       (decoded) => {
+        if (qlScannerPaused) return;
         const parsed = parseLpaCode(decoded);
         if (parsed) {
-          void stopQlScanner();
+          pauseQlScanner();
           if (qlSmdpInput) qlSmdpInput.value = parsed.smdpAddress;
           if (qlCodeInput) qlCodeInput.value = parsed.activationCode;
           if (qlConfirmInput) qlConfirmInput.value = parsed.confirmationCode;
@@ -2223,17 +2335,72 @@ qlCameraStartBtn?.addEventListener('click', async () => {
       () => {}
     );
     qlScannerActive = true;
+    qlScannerPaused = false;
+    markCameraPermissionGranted();
+    qlScannerContainer?.classList.remove('is-paused');
     if (qlOverlayState) qlOverlayState.hidden = true;
     if (qlCameraStopBar) qlCameraStopBar.hidden = false;
-  } catch {
+  } catch (err) {
+    clearCameraPermissionIfDenied(err);
     const readerEl = document.getElementById('ql-qr-reader');
     if (readerEl) readerEl.replaceChildren();
+    qlScannerContainer?.classList.remove('is-paused');
+    if (qlCameraStartBtn) qlCameraStartBtn.hidden = false;
     if (qlOverlayState) qlOverlayState.hidden = false;
     if (qlScannerStatus) qlScannerStatus.textContent = 'Camera unavailable or permission denied.';
     showError(qlErrorBox, 'Camera permission denied or no camera available.');
   } finally {
+    qlScannerStarting = false;
     if (qlCameraStartBtn) qlCameraStartBtn.disabled = false;
   }
+}
+
+async function resumeOrRestartQlScanner() {
+  if (qlScanner && qlScannerActive && qlScannerPaused) {
+    const readerEl = document.getElementById('ql-qr-reader');
+    const video = readerEl?.querySelector('video') as HTMLVideoElement | null;
+    const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+    if (track && track.readyState === 'live') {
+      try {
+        qlScanner.resume();
+        qlScannerPaused = false;
+        qlScannerContainer?.classList.remove('is-paused');
+        if (qlOverlayState) qlOverlayState.hidden = true;
+        if (qlCameraStartBtn) qlCameraStartBtn.hidden = false;
+        if (qlCameraStopBar) qlCameraStopBar.hidden = false;
+        return;
+      } catch {
+        // Fall through to full camera restart
+      }
+    }
+  }
+  if (mobileCameraQuery.matches && (await hasPreviousCameraPermission())) {
+    await startQlScanner();
+  } else {
+    await stopQlScanner();
+  }
+}
+
+async function maybeAutoStartQlScanner() {
+  if (dashboard.hidden) return;
+  if (tabQuicklink.getAttribute('aria-selected') !== 'true') return;
+  if (!mobileCameraQuery.matches) return;
+  if (qlScannerActive || qlScannerStarting || currentQlLpa) return;
+  if (await hasPreviousCameraPermission()) {
+    if (
+      !dashboard.hidden &&
+      tabQuicklink.getAttribute('aria-selected') === 'true' &&
+      !qlScannerActive &&
+      !qlScannerStarting &&
+      !currentQlLpa
+    ) {
+      await startQlScanner();
+    }
+  }
+}
+
+qlCameraStartBtn?.addEventListener('click', () => {
+  void startQlScanner();
 });
 
 qlCameraStopBtn?.addEventListener('click', () => void stopQlScanner());
@@ -2244,6 +2411,9 @@ async function scanQlImage(file: File) {
     if (!parsed) {
       showError(qlErrorBox, 'QR code found, but it is not a valid LPA code.');
       return;
+    }
+    if (qlScannerActive && !qlScannerPaused) {
+      pauseQlScanner();
     }
     if (qlSmdpInput) qlSmdpInput.value = parsed.smdpAddress;
     if (qlCodeInput) qlCodeInput.value = parsed.activationCode;
@@ -2407,7 +2577,7 @@ qlResetBtn?.addEventListener('click', () => {
   if (qlResultContent) qlResultContent.hidden = true;
   if (qlEmptyState) qlEmptyState.hidden = false;
   clearError(qlErrorBox);
-  void stopQlScanner();
+  void resumeOrRestartQlScanner();
 });
 
 // Delete & Password Dialogs
