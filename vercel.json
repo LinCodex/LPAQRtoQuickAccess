@@ -120,7 +120,7 @@
       ]
     },
     {
-      "source": "/manifest.webmanifest",
+      "source": "/:name(manifest|admin-manifest|lpascan-manifest).webmanifest",
       "headers": [
         {
           "key": "Content-Type",

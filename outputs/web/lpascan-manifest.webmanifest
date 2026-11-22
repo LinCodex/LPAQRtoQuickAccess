@@ -1,0 +1,37 @@
+{
+  "id": "/lpascan",
+  "name": "EZRefill eSIM Scanner 椰子通讯",
+  "short_name": "eSIM Scanner",
+  "description": "Scan or enter an LPA eSIM code for one-tap iOS setup and shareable QR codes.",
+  "start_url": "/lpascan",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101114",
+  "theme_color": "#18191b",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
