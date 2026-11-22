@@ -1095,7 +1095,19 @@
   gap: 8px;
 }
 
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  #ql-action-row.lpa-action-row,
+  #ql-action-row.lpa-action-row.is-single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #ql-action-row.lpa-action-row > .lpa-action-btn {
+    width: 100%;
+  }
+}
+
 .lpa-action-row .lpa-action-btn {
+  width: 100%;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
