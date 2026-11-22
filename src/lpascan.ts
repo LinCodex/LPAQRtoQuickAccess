@@ -261,6 +261,12 @@ async function displayResult(lpa: LpaData, phone?: string) {
   clearError();
 }
 
+function getResponsiveQrBox(viewfinderWidth: number, viewfinderHeight: number) {
+  const minEdge = Math.min(viewfinderWidth || 260, viewfinderHeight || 260);
+  const size = Math.max(150, Math.min(220, Math.floor(minEdge * 0.72)));
+  return { width: size, height: size };
+}
+
 async function stopScanner() {
   if (html5QrCode && isScannerRunning) {
     try {
@@ -269,12 +275,13 @@ async function stopScanner() {
       // Ignore stop error if stream already ended
     }
     try {
-      await html5QrCode.clear();
+      html5QrCode.clear();
     } catch {
       // Ignore clear error
     }
   }
   isScannerRunning = false;
+  if (readerElement) readerElement.replaceChildren();
   if (overlayState) overlayState.hidden = false;
   if (stopBar) stopBar.hidden = true;
 }
@@ -310,9 +317,8 @@ async function startScanner() {
     await html5QrCode.start(
       { facingMode: 'environment' },
       {
-        fps: 24,
-        qrbox: { width: 220, height: 220 },
-        aspectRatio: 1.0,
+        fps: 20,
+        qrbox: getResponsiveQrBox,
         disableFlip: false
       },
       (decodedText) => {
@@ -327,6 +333,7 @@ async function startScanner() {
   } catch (err) {
     console.warn('Camera access unavailable or denied:', err);
     isScannerRunning = false;
+    if (readerElement) readerElement.replaceChildren();
     if (overlayState) overlayState.hidden = false;
     if (stopBar) stopBar.hidden = true;
     if (statusText) {

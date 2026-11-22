@@ -1761,17 +1761,29 @@ async function captureScreenCutoutFile(): Promise<File> {
   return new File([blob], 'screenshot.png', { type: 'image/png' });
 }
 
+function getResponsiveQrBox(viewfinderWidth: number, viewfinderHeight: number) {
+  const minEdge = Math.min(viewfinderWidth || 260, viewfinderHeight || 260);
+  const size = Math.max(150, Math.min(220, Math.floor(minEdge * 0.72)));
+  return { width: size, height: size };
+}
+
 // Modal Scanner Controls
 async function stopModalQrScanner() {
   if (modalScanner && modalScannerActive) {
     try {
       await modalScanner.stop();
-      await modalScanner.clear();
+    } catch {
+      // Ignore stop errors
+    }
+    try {
+      modalScanner.clear();
     } catch {
       // Ignore cleanup errors
     }
   }
   modalScannerActive = false;
+  const readerEl = document.getElementById('admin-qr-reader');
+  if (readerEl) readerEl.replaceChildren();
   adminQrContainer.hidden = true;
   adminQrScanBtn.textContent = 'Scan QR';
 }
@@ -1952,11 +1964,12 @@ adminQrScanBtn.addEventListener('click', async () => {
   try {
     modalScanner = new Html5Qrcode('admin-qr-reader', {
       verbose: false,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
     });
     await modalScanner.start(
       { facingMode: 'environment' },
-      { fps: 15, qrbox: { width: 220, height: 220 } },
+      { fps: 18, qrbox: getResponsiveQrBox },
       (decodedText) => {
         const parsed = parseLpaCode(decodedText);
         if (parsed) {
@@ -2166,12 +2179,18 @@ async function stopQlScanner() {
   if (qlScanner && qlScannerActive) {
     try {
       await qlScanner.stop();
-      await qlScanner.clear();
+    } catch {
+      // Ignore stop errors
+    }
+    try {
+      qlScanner.clear();
     } catch {
       // Ignore cleanup errors
     }
   }
   qlScannerActive = false;
+  const readerEl = document.getElementById('ql-qr-reader');
+  if (readerEl) readerEl.replaceChildren();
   if (qlOverlayState) qlOverlayState.hidden = false;
   if (qlCameraStopBar) qlCameraStopBar.hidden = true;
 }
@@ -2190,7 +2209,7 @@ qlCameraStartBtn?.addEventListener('click', async () => {
     });
     await qlScanner.start(
       { facingMode: 'environment' },
-      { fps: 15, qrbox: { width: 220, height: 220 } },
+      { fps: 18, qrbox: getResponsiveQrBox },
       (decoded) => {
         const parsed = parseLpaCode(decoded);
         if (parsed) {
@@ -2207,6 +2226,9 @@ qlCameraStartBtn?.addEventListener('click', async () => {
     if (qlOverlayState) qlOverlayState.hidden = true;
     if (qlCameraStopBar) qlCameraStopBar.hidden = false;
   } catch {
+    const readerEl = document.getElementById('ql-qr-reader');
+    if (readerEl) readerEl.replaceChildren();
+    if (qlOverlayState) qlOverlayState.hidden = false;
     if (qlScannerStatus) qlScannerStatus.textContent = 'Camera unavailable or permission denied.';
     showError(qlErrorBox, 'Camera permission denied or no camera available.');
   } finally {
