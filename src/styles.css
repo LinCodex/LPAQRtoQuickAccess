@@ -3,8 +3,8 @@
 
 :root {
   color-scheme: light dark;
-  --font-sans: "Noto Sans SC Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
-  --font-serif-zh: "Noto Serif SC Variable", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro SC", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans SC Variable", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+  --font-serif-zh: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro SC", "PingFang SC", "Hiragino Sans GB", "Heiti SC", "Microsoft YaHei", "Noto Sans SC Variable", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
   font-family: var(--font-sans);
   font-synthesis: none;
   --page: #f5f5f7;

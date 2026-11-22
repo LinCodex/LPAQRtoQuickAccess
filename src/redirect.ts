@@ -191,8 +191,8 @@ function applyValidLink(appleUrl: string) {
     activateBtn.href = appleUrl;
     activateBtn.removeAttribute('aria-disabled');
   }
-  if (activateBtnTitle) activateBtnTitle.textContent = 'Activate eSIM Now';
-  if (activateBtnSub) activateBtnSub.textContent = 'Opens iPhone eSIM setup';
+  if (activateBtnTitle) activateBtnTitle.textContent = 'Click to Activate';
+  if (activateBtnSub) activateBtnSub.textContent = '';
   if (errorBox) errorBox.hidden = true;
   if (pollMeta) pollMeta.hidden = true;
   setShellState('ready');
@@ -205,13 +205,13 @@ function applyPendingState(state: 'standby' | 'processing' | 'polling') {
   }
   if (state === 'standby') {
     if (activateBtnTitle) activateBtnTitle.textContent = 'Awaiting Activation';
-    if (activateBtnSub) activateBtnSub.textContent = 'Your eSIM is being prepared. Please wait.';
+    if (activateBtnSub) activateBtnSub.textContent = '';
   } else if (state === 'processing') {
-    if (activateBtnTitle) activateBtnTitle.textContent = 'Processing Your eSIM…';
-    if (activateBtnSub) activateBtnSub.textContent = 'Almost ready — updates automatically';
+    if (activateBtnTitle) activateBtnTitle.textContent = 'Processing…';
+    if (activateBtnSub) activateBtnSub.textContent = '';
   } else {
     if (activateBtnTitle) activateBtnTitle.textContent = 'Checking Status…';
-    if (activateBtnSub) activateBtnSub.textContent = 'Loading your eSIM profile';
+    if (activateBtnSub) activateBtnSub.textContent = '';
   }
   if (errorBox) errorBox.hidden = true;
   if (pollMeta) pollMeta.hidden = false;
@@ -228,7 +228,7 @@ function showInvalid(isPolling = false) {
     activateBtn.setAttribute('aria-disabled', 'true');
   }
   if (activateBtnTitle) activateBtnTitle.textContent = 'Link Unavailable';
-  if (activateBtnSub) activateBtnSub.textContent = 'Invalid or expired activation link';
+  if (activateBtnSub) activateBtnSub.textContent = '';
   if (errorBox) errorBox.hidden = false;
   if (pollMeta) pollMeta.hidden = true;
   setShellState('invalid');

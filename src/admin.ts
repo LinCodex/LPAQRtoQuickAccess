@@ -1596,7 +1596,27 @@ async function recordHistoryEntry(lpa: LpaData, rawPhone: string) {
     });
     if (!res.ok) return;
     const saved = (await res.json()) as HistoryRecord;
-    historyEntries.unshift(saved);
+    const existingIdx = historyEntries.findIndex(
+      (h) =>
+        h.id === saved.id ||
+        (h.smdpAddress.toLowerCase() === saved.smdpAddress.toLowerCase() &&
+          h.activationCode === saved.activationCode &&
+          (h.confirmationCode || '') === (saved.confirmationCode || ''))
+    );
+    if (existingIdx !== -1) {
+      historyEntries[existingIdx] = saved;
+      historyEntries = historyEntries.filter(
+        (h, idx) =>
+          idx === existingIdx ||
+          !(
+            h.smdpAddress.toLowerCase() === saved.smdpAddress.toLowerCase() &&
+            h.activationCode === saved.activationCode &&
+            (h.confirmationCode || '') === (saved.confirmationCode || '')
+          )
+      );
+    } else {
+      historyEntries.unshift(saved);
+    }
     renderHistory();
   } catch {
     // Keep QR UI responsive even if logging fails
@@ -2460,11 +2480,30 @@ qlSmdpInput?.addEventListener('input', () => {
   }
 });
 
+let qlPhoneHistoryTimer = 0;
+
 qlPhoneInput?.addEventListener('input', () => {
   if (!currentQlLpa) return;
   currentQlPhone = sanitizePhoneNumber(qlPhoneInput.value);
   updateQlLinkAndPhone();
   if (qlQrMode === 'redirect') void renderQlQr();
+  clearTimeout(qlPhoneHistoryTimer);
+  if (currentQlPhone.length >= 7) {
+    const lpaSnapshot = { ...currentQlLpa };
+    const phoneSnapshot = currentQlPhone;
+    qlPhoneHistoryTimer = window.setTimeout(() => {
+      void recordHistoryEntry(lpaSnapshot, phoneSnapshot);
+    }, 600);
+  }
+});
+
+qlPhoneInput?.addEventListener('change', () => {
+  if (!currentQlLpa) return;
+  clearTimeout(qlPhoneHistoryTimer);
+  currentQlPhone = sanitizePhoneNumber(qlPhoneInput.value);
+  if (currentQlPhone) {
+    void recordHistoryEntry(currentQlLpa, currentQlPhone);
+  }
 });
 
 qlForm?.addEventListener('submit', (e) => {

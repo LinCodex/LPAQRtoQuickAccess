@@ -230,10 +230,12 @@
   overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
   width: 100%;
-  min-block-size: 60px;
-  padding: 11px 15px;
+  min-block-size: 62px;
+  padding: 14px 20px;
   border-radius: 16px;
   background: linear-gradient(180deg, #df3c1e 0%, #b82910 100%);
   color: #ffffff;
@@ -244,6 +246,15 @@
   scale: 1;
   box-shadow: 0 8px 20px rgb(184 41 16 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.24);
   transition: filter 160ms var(--settle), box-shadow 180ms var(--settle), scale 120ms var(--settle);
+}
+
+.esim-cta-label {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1.15rem, 1.02rem + 0.7vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
 }
 
 @media (prefers-color-scheme: dark) {

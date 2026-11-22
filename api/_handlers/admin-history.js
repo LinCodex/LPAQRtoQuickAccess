@@ -77,6 +77,71 @@ export default async function handler(req, res) {
       const { provider } = getRedisConfig();
       redis = await getRedisClient();
 
+      const ids = await redis.sMembers('history:esim:ids');
+      const staleIds = [];
+      const entries = [];
+
+      if (ids && ids.length > 0) {
+        const rawList = await redis.mGet(ids.map((itemId) => `history:esim:${itemId}`));
+        ids.forEach((itemId, idx) => {
+          const raw = rawList[idx];
+          if (!raw) {
+            staleIds.push(itemId);
+            return;
+          }
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+              entries.push(parsed);
+            } else {
+              staleIds.push(itemId);
+            }
+          } catch {
+            staleIds.push(itemId);
+          }
+        });
+      }
+
+      const matchingEntries = entries
+        .filter((item) => {
+          if (typeof item.smdpAddress === 'string' && typeof item.activationCode === 'string') {
+            return (
+              item.smdpAddress.trim().toLowerCase() === parts.smdpAddress.toLowerCase() &&
+              item.activationCode.trim() === parts.activationCode &&
+              String(item.confirmationCode || '').trim() === String(parts.confirmationCode || '').trim()
+            );
+          }
+          return typeof item.lpaCode === 'string' && item.lpaCode.trim() === rawLpa;
+        })
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      if (matchingEntries.length > 0) {
+        const primary = matchingEntries[0];
+        const duplicateIds = matchingEntries.slice(1).map((item) => item.id).filter(Boolean);
+        const updatedEntry = {
+          ...primary,
+          lpaCode: rawLpa,
+          smdpAddress: parts.smdpAddress,
+          activationCode: parts.activationCode,
+          confirmationCode: parts.confirmationCode,
+          phoneNumber: phoneNumber || primary.phoneNumber || '',
+          updatedAt: new Date().toISOString()
+        };
+
+        await redis.set(`history:esim:${primary.id}`, JSON.stringify(updatedEntry));
+
+        const cleanupIds = [...staleIds, ...duplicateIds];
+        if (cleanupIds.length > 0) {
+          await Promise.all([
+            ...duplicateIds.map((dupId) => redis.del(`history:esim:${dupId}`)),
+            redis.sRem('history:esim:ids', cleanupIds)
+          ]);
+        }
+
+        await closeRedisClient(redis);
+        return res.status(200).json(updatedEntry);
+      }
+
       const id = uuidv4().split('-')[0];
       const entry = {
         id,
@@ -92,29 +157,14 @@ export default async function handler(req, res) {
       await redis.set(`history:esim:${id}`, JSON.stringify(entry));
       await redis.sAdd('history:esim:ids', id);
 
-      const ids = await redis.sMembers('history:esim:ids');
-      if (ids && ids.length > HISTORY_MAX_ENTRIES) {
-        const rawList = await redis.mGet(ids.map((itemId) => `history:esim:${itemId}`));
-        const staleIds = [];
-        const entries = [];
-        ids.forEach((itemId, idx) => {
-          const raw = rawList[idx];
-          if (!raw) {
-            staleIds.push(itemId);
-            return;
-          }
-          try {
-            entries.push(JSON.parse(raw));
-          } catch {
-            staleIds.push(itemId);
-          }
-        });
-        entries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        const overflowIds = entries.slice(HISTORY_MAX_ENTRIES).map((item) => item.id);
+      const allEntries = [entry, ...entries];
+      if (allEntries.length > HISTORY_MAX_ENTRIES || staleIds.length > 0) {
+        allEntries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const overflowIds = allEntries.slice(HISTORY_MAX_ENTRIES).map((item) => item.id);
         const toRemove = [...staleIds, ...overflowIds];
         if (toRemove.length > 0) {
           await Promise.all([
-            ...toRemove.map((oldId) => redis.del(`history:esim:${oldId}`)),
+            ...overflowIds.map((oldId) => redis.del(`history:esim:${oldId}`)),
             redis.sRem('history:esim:ids', toRemove)
           ]);
         }

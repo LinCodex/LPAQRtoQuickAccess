@@ -517,6 +517,46 @@ app.post('/api/admin/history', authenticateToken, (req, res) => {
   }
 
   const items = readHistory();
+  const matchIdx = items.findIndex((item) => {
+    if (!item || typeof item !== 'object') return false;
+    if (typeof item.smdpAddress === 'string' && typeof item.activationCode === 'string') {
+      return (
+        item.smdpAddress.trim().toLowerCase() === parts.smdpAddress.toLowerCase() &&
+        item.activationCode.trim() === parts.activationCode &&
+        String(item.confirmationCode || '').trim() === String(parts.confirmationCode || '').trim()
+      );
+    }
+    return typeof item.lpaCode === 'string' && item.lpaCode.trim() === rawLpa;
+  });
+
+  if (matchIdx !== -1) {
+    const existing = items[matchIdx];
+    const updated = {
+      ...existing,
+      lpaCode: rawLpa,
+      smdpAddress: parts.smdpAddress,
+      activationCode: parts.activationCode,
+      confirmationCode: parts.confirmationCode,
+      phoneNumber: phoneNumber || existing.phoneNumber || '',
+      updatedAt: new Date().toISOString()
+    };
+    items[matchIdx] = updated;
+    const deduped = items.filter((item, idx) => {
+      if (idx === matchIdx) return true;
+      if (!item || typeof item !== 'object') return false;
+      if (typeof item.smdpAddress === 'string' && typeof item.activationCode === 'string') {
+        return !(
+          item.smdpAddress.trim().toLowerCase() === parts.smdpAddress.toLowerCase() &&
+          item.activationCode.trim() === parts.activationCode &&
+          String(item.confirmationCode || '').trim() === String(parts.confirmationCode || '').trim()
+        );
+      }
+      return !(typeof item.lpaCode === 'string' && item.lpaCode.trim() === rawLpa);
+    });
+    writeHistory(deduped);
+    return res.status(200).json(updated);
+  }
+
   const entry = {
     id: uuidv4().split('-')[0],
     lpaCode: rawLpa,
