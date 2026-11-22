@@ -1,23 +1,23 @@
 // Vercel Serverless Function - Login
-const { createClient } = require('redis');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
-
-async function getRedisClient() {
-  const client = createClient({
-    url: process.env.REDIS_URL
-  });
-  await client.connect();
-  return client;
-}
+const {
+  getJwtSecret,
+  applyCors,
+  setSessionCookie,
+  getClientIp,
+  checkRateLimit,
+  timingSafeCompare
+} = require('../_lib/auth');
+const {
+  getRedisConfig,
+  getRedisClient,
+  closeRedisClient,
+  isRedisUnavailableError
+} = require('../_lib/redis');
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -29,71 +29,97 @@ module.exports = async function handler(req, res) {
 
   let redis;
   try {
-    const { username, password } = req.body || {};
+    const { username, password, rememberMe } = req.body || {};
 
-    if (!username || !password) {
+    if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
+    const cleanUsername = username.trim();
+    if (!/^[A-Za-z0-9_.-]{1,64}$/.test(cleanUsername)) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const remember = Boolean(rememberMe);
+    const expiresIn = remember ? '30d' : '24h';
+    const maxAgeSec = remember ? 30 * 24 * 60 * 60 : 86400;
+
+    const jwtSecret = getJwtSecret();
     redis = await getRedisClient();
 
-    // Get user from Redis
-    const userData = await redis.get(`user:${username}`);
+    const ip = getClientIp(req);
+    const rate = await checkRateLimit(redis, `ratelimit:login:${ip}`, 10, 900);
+    if (!rate.allowed) {
+      await closeRedisClient(redis);
+      return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    }
+
+    const userData = await redis.get(`user:${cleanUsername}`);
+    const bootstrapPassword =
+      typeof process.env.ADMIN_BOOTSTRAP_PASSWORD === 'string' && process.env.ADMIN_BOOTSTRAP_PASSWORD.length >= 8
+        ? process.env.ADMIN_BOOTSTRAP_PASSWORD
+        : null;
 
     if (!userData) {
-      // First time setup - create admin user if credentials match default
-      if (username === 'admin' && password === 'Aa13678!') {
-        const hashedPassword = bcrypt.hashSync('Aa13678!', 10);
-        await redis.set(`user:admin`, JSON.stringify({
+      if (cleanUsername === 'admin' && bootstrapPassword && timingSafeCompare(password, bootstrapPassword)) {
+        const hashedPassword = bcrypt.hashSync(bootstrapPassword, 10);
+        await redis.set('user:admin', JSON.stringify({
           id: 'admin',
           username: 'admin',
           password: hashedPassword,
-          passwordSetByUser: false, // Default password, not set by user
+          passwordSetByUser: false,
           createdAt: new Date().toISOString()
         }));
 
-        const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-        await redis.disconnect();
-        return res.status(200).json({ token, username: 'admin', isDefaultPassword: true });
+        const token = jwt.sign({ id: 'admin', username: 'admin' }, jwtSecret, { expiresIn });
+        setSessionCookie(req, res, token, maxAgeSec);
+        await closeRedisClient(redis);
+        return res.status(200).json({ token, username: 'admin', isDefaultPassword: true, rememberMe: remember });
       }
-      await redis.disconnect();
+      await closeRedisClient(redis);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = JSON.parse(userData);
+    let passwordMatch = bcrypt.compareSync(password, user.password);
 
-    // Check password
-    const passwordMatch = bcrypt.compareSync(password, user.password);
-
-    // Special case: admin with new default password but old hash in DB
-    // This handles the password migration from admin123 to Aa13678!
-    if (!passwordMatch && username === 'admin' && password === 'Aa13678!' && !user.passwordSetByUser) {
-      // Reset admin password to new default
-      const hashedPassword = bcrypt.hashSync('Aa13678!', 10);
-      await redis.set(`user:admin`, JSON.stringify({
+    if (
+      !passwordMatch &&
+      cleanUsername === 'admin' &&
+      !user.passwordSetByUser &&
+      bootstrapPassword &&
+      timingSafeCompare(password, bootstrapPassword)
+    ) {
+      const hashedPassword = bcrypt.hashSync(bootstrapPassword, 10);
+      await redis.set('user:admin', JSON.stringify({
         ...user,
         password: hashedPassword,
         passwordSetByUser: false,
         updatedAt: new Date().toISOString()
       }));
-
-      const token = jwt.sign({ id: 'admin', username: 'admin' }, JWT_SECRET, { expiresIn: '24h' });
-      await redis.disconnect();
-      return res.status(200).json({ token, username: 'admin', isDefaultPassword: true });
+      passwordMatch = true;
     }
 
     if (!passwordMatch) {
-      await redis.disconnect();
+      await closeRedisClient(redis);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign({ id: user.id, username: user.username }, jwtSecret, { expiresIn });
     const isDefaultPassword = !user.passwordSetByUser;
-    await redis.disconnect();
-    return res.status(200).json({ token, username: user.username, isDefaultPassword });
+    setSessionCookie(req, res, token, maxAgeSec);
+    await closeRedisClient(redis);
+    return res.status(200).json({ token, username: user.username, isDefaultPassword, rememberMe: remember });
   } catch (error) {
     console.error('Login error:', error);
-    if (redis) await redis.disconnect().catch(() => { });
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+    await closeRedisClient(redis);
+    const { url } = getRedisConfig();
+    if (!process.env.JWT_SECRET || !url) {
+      return res.status(503).json({ error: 'Admin authentication is not configured on this server.' });
+    }
+    if (isRedisUnavailableError(error)) {
+      return res.status(503).json({ error: 'Database service unavailable. Please check Redis storage configuration.' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

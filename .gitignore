@@ -29,3 +29,9 @@ Thumbs.db
 # Testing
 coverage/
 node_modules
+
+# Local dev-only 3D models & decoders
+dev-assets/
+
+# Local API server data
+server/data/

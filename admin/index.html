@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZRefill">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Admin Console — EZRefill 椰子通讯</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/utility.css">
+  <link rel="stylesheet" href="/src/admin-ui.css">
+  <script src="/lang-init.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header compact-header">
+    <a class="brand" href="/?stay=1" aria-label="EZRefill home">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+    <div class="header-actions">
+      <a class="text-link" href="/?stay=1" style="padding:0 10px;">Public Scanner</a>
+      <button class="language-toggle" aria-label="切换为中文">中文</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="admin-auth-gate" class="admin-auth-gate" role="status" aria-live="polite" aria-label="Loading admin console">
+      <span class="admin-auth-spinner" aria-hidden="true"></span>
+    </div>
+
+    <section id="login-screen" class="admin-login-wrap" aria-labelledby="login-title" hidden>
+      <div class="utility-card admin-login-card">
+        <a class="back-link" href="/?stay=1" style="margin-bottom:20px;">← Back to EZRefill</a>
+        <p class="eyebrow" style="margin-bottom:10px;">EZREFILL / ADMIN</p>
+        <h1 id="login-title" style="font-size:30px;margin-bottom:8px;">Sign in</h1>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:22px;">Manage eSIM activations and quick links.</p>
+
+        <form id="login-form" novalidate>
+          <div class="lpa-input-group">
+            <label for="login-username">Username</label>
+            <input id="login-username" name="username" type="text" class="lpa-input" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="next" required>
+          </div>
+          <div class="lpa-input-group">
+            <div class="admin-label-row">
+              <label for="login-password">Password</label>
+              <button type="button" id="toggle-login-password" class="admin-pw-toggle" aria-pressed="false">Show</button>
+            </div>
+            <input id="login-password" name="password" type="password" class="lpa-input" autocomplete="current-password" enterkeyhint="done" required>
+          </div>
+          <div class="admin-remember-row">
+            <input id="login-remember" name="remember" type="checkbox" class="admin-checkbox" checked>
+            <label for="login-remember">Remember me for 30 days</label>
+          </div>
+          <div id="login-error" class="lpa-alert is-error" role="alert" hidden></div>
+          <button id="login-submit" type="submit" class="lpa-primary-btn" style="margin-top:8px;">Sign in</button>
+          <button id="open-reset-btn" type="button" class="lpa-secondary-btn">Reset password with token</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="dashboard" class="admin-shell" aria-label="Activation dashboard" hidden>
+      <div class="admin-topbar">
+        <div>
+          <p class="eyebrow" style="margin-bottom:6px;">EZREFILL / ADMIN CONSOLE</p>
+          <h1>eSIM Control Center</h1>
+        </div>
+        <div class="admin-user-bar">
+          <span class="admin-user-pill">
+            <span class="admin-user-dot" aria-hidden="true"></span>
+            <span id="user-display" data-no-translate>admin</span>
+          </span>
+          <button id="open-change-password-btn" type="button" class="lpa-action-btn">Change password</button>
+          <button id="logout-btn" type="button" class="lpa-action-btn">Log out</button>
+        </div>
+      </div>
+
+      <!-- Clickable Status Overview Filters -->
+      <div class="admin-stats" role="group" aria-label="Filter by activation status">
+        <button type="button" class="admin-stat-card" data-filter="all" aria-pressed="true">
+          <strong id="stat-total" data-no-translate>0</strong>
+          <span class="admin-stat-label-row">
+            <span class="stat-dot is-all" aria-hidden="true"></span>
+            <span>All Activations</span>
+          </span>
+        </button>
+        <button type="button" class="admin-stat-card" data-filter="standby" aria-pressed="false">
+          <strong id="stat-standby" data-no-translate>0</strong>
+          <span class="admin-stat-label-row">
+            <span class="stat-dot is-standby" aria-hidden="true"></span>
+            <span>Standby</span>
+          </span>
+        </button>
+        <button type="button" class="admin-stat-card" data-filter="processing" aria-pressed="false">
+          <strong id="stat-processing" data-no-translate>0</strong>
+          <span class="admin-stat-label-row">
+            <span class="stat-dot is-processing" aria-hidden="true"></span>
+            <span>Processing</span>
+          </span>
+        </button>
+        <button type="button" class="admin-stat-card" data-filter="active" aria-pressed="false">
+          <strong id="stat-active" data-no-translate>0</strong>
+          <span class="admin-stat-label-row">
+            <span class="stat-dot is-active" aria-hidden="true"></span>
+            <span>Active</span>
+          </span>
+        </button>
+      </div>
+
+      <!-- Accessible Workspace Mode Tabs -->
+      <div class="admin-tablist" role="tablist" aria-label="Admin tools">
+        <button type="button" id="tab-quicklink" class="admin-tab" role="tab" aria-selected="true" tabindex="0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span>Quick eSIM Link</span>
+        </button>
+        <button type="button" id="tab-activations" class="admin-tab" role="tab" aria-selected="false" tabindex="-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+            <line x1="7" y1="9" x2="17" y2="9"/>
+            <line x1="7" y1="14" x2="13" y2="14"/>
+          </svg>
+          <span>Standby &amp; Activations</span>
+        </button>
+        <button type="button" id="tab-history" class="admin-tab" role="tab" aria-selected="false" tabindex="-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"/>
+            <polyline points="12 7 12 12 15.5 14"/>
+          </svg>
+          <span>Generated History</span>
+          <span id="history-count-badge" class="admin-tab-badge" data-no-translate>0</span>
+        </button>
+        <button type="button" id="tab-status" class="admin-tab" role="tab" aria-selected="false" tabindex="-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span>System Status</span>
+          <span id="status-tab-dot" class="admin-status-tab-dot" data-state="loading" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <div id="dashboard-toast" class="lpa-toast" role="status" hidden></div>
+      <div id="dashboard-error" class="lpa-alert is-error" role="alert" hidden></div>
+
+      <!-- Panel 1: Integrated Quick eSIM Activation Link & QR Generator -->
+      <div id="panel-quicklink" class="admin-tabpanel" role="tabpanel" aria-labelledby="tab-quicklink" tabindex="0">
+        <div class="admin-ql-grid">
+          <section class="utility-card" aria-labelledby="ql-input-heading">
+            <h2 id="ql-input-heading">Quick eSIM Link Generator</h2>
+
+            <div id="ql-camera-section" class="lpa-camera-section">
+              <div class="lpa-scanner-container">
+                <div id="ql-qr-reader"></div>
+                <div id="ql-overlay-state" class="scanner-overlay-state">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                    <circle cx="12" cy="13" r="3"/>
+                  </svg>
+                  <p id="ql-scanner-status" class="scanner-status-text">Point camera at an eSIM QR code or tap Start Camera.</p>
+                  <button id="ql-camera-start-btn" class="lpa-action-btn on-dark" type="button">Start Camera</button>
+                </div>
+              </div>
+              <div id="ql-camera-stop-bar" class="scanner-stop-bar" hidden>
+                <button id="ql-camera-stop-btn" class="lpa-action-btn" type="button">Stop Camera</button>
+              </div>
+            </div>
+
+            <div id="ql-action-row" class="lpa-action-row">
+              <label class="lpa-action-btn lpa-file-label">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span>Upload QR Image</span>
+                <input type="file" id="ql-file-input" accept="image/*" class="sr-only">
+              </label>
+              <button id="ql-cutout-btn" class="lpa-action-btn" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span>Screen Cutout</span>
+              </button>
+            </div>
+
+            <div class="admin-ql-reset-row">
+              <button id="ql-reset-btn" class="lpa-action-btn admin-ql-clear-btn" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                <span>Clear / Reset</span>
+              </button>
+            </div>
+
+            <div class="lpa-divider"><span>or enter manually</span></div>
+
+            <form id="ql-form" class="admin-ql-form" novalidate>
+              <div class="admin-inline-field">
+                <label for="ql-smdp">SM-DP+</label>
+                <input id="ql-smdp" type="text" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="t-mobile.idemia.io or full LPA:1$...">
+              </div>
+
+              <div class="admin-inline-field">
+                <label for="ql-code">Activation Code</label>
+                <input id="ql-code" type="text" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="G0LFC-8Z7IK-HYBGV-6CLG1">
+              </div>
+
+              <div class="admin-inline-field">
+                <label for="ql-confirm">Confirmation</label>
+                <input id="ql-confirm" type="text" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="Optional code (e.g. 1234)">
+              </div>
+
+              <div class="admin-inline-field">
+                <label for="ql-phone">Phone</label>
+                <input id="ql-phone" type="tel" class="lpa-input" autocomplete="tel" placeholder="Optional (e.g. 718-555-0123)">
+              </div>
+
+              <button id="ql-generate-btn" type="submit" class="lpa-primary-btn">Generate Quick Link ↗</button>
+            </form>
+
+            <div id="ql-error-box" class="lpa-alert is-error" role="alert" hidden></div>
+          </section>
+
+          <section class="utility-card" aria-labelledby="ql-result-heading">
+            <h2 id="ql-result-heading">Generated eSIM Link</h2>
+
+            <div id="ql-empty-state" class="admin-ql-empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="2"/>
+                <path d="M8.5 8.5a5 5 0 0 0 0 7"/>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                <path d="M5.5 5.5a9.2 9.2 0 0 0 0 13"/>
+                <path d="M18.5 5.5a9.2 9.2 0 0 1 0 13"/>
+              </svg>
+              <strong>Ready to generate</strong>
+              <p>Upload an eSIM QR code or enter the SM-DP+ and activation code on the left to build a one-tap setup link and QR code.</p>
+            </div>
+
+            <div id="ql-result-content" hidden>
+              <div class="lpa-verify-badge">
+                <div class="lpa-verify-badge-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Verified eSIM Profile</span>
+                </div>
+                <div class="lpa-verify-item">
+                  <span class="lpa-verify-label">SM-DP+ Server</span>
+                  <div id="ql-verify-smdp" class="lpa-verify-value" data-no-translate></div>
+                </div>
+                <div class="lpa-verify-item">
+                  <span class="lpa-verify-label">Activation Code</span>
+                  <div id="ql-verify-code" class="lpa-verify-value" data-no-translate></div>
+                </div>
+                <div id="ql-verify-confirm-row" class="lpa-verify-item" hidden>
+                  <span class="lpa-verify-label">Confirmation Code</span>
+                  <div id="ql-verify-confirm" class="lpa-verify-value" data-no-translate></div>
+                </div>
+                <div id="ql-verify-phone-row" class="lpa-verify-item" hidden>
+                  <span class="lpa-verify-label">Phone Number</span>
+                  <div id="ql-verify-phone" class="lpa-verify-value" data-no-translate></div>
+                </div>
+              </div>
+
+              <div class="lpa-link-box">
+                <span class="lpa-verify-label">Quick Activation Link</span>
+                <code id="ql-link-code" class="lpa-link-code" data-no-translate></code>
+              </div>
+
+              <div class="admin-ql-actions">
+                <button id="ql-copy-link-btn" class="lpa-action-btn is-primary" type="button">Copy Link</button>
+                <button id="ql-copy-lpa-qr-btn" class="lpa-action-btn" type="button">Copy LPA QR</button>
+                <a id="ql-preview-link" class="lpa-action-btn" href="#" target="_blank" rel="noopener noreferrer">Open Preview ↗</a>
+                <button id="ql-save-activation-btn" class="lpa-action-btn" type="button">Save to Activations</button>
+              </div>
+
+              <div class="lpa-qr-mode" role="group" aria-label="QR Code format">
+                <button type="button" data-ql-qr-mode="redirect" aria-pressed="true">Quick Link QR</button>
+                <button type="button" data-ql-qr-mode="raw" aria-pressed="false">Raw LPA QR</button>
+              </div>
+
+              <div class="lpa-qr-display">
+                <p id="ql-qr-caption">Quick Link QR (opens activation page directly)</p>
+                <canvas id="ql-qr-canvas"></canvas>
+                <div class="lpa-qr-actions">
+                  <button id="ql-copy-qr-btn" class="lpa-action-btn lpa-qr-copy-btn" type="button">Copy QR Image</button>
+                </div>
+                <p id="ql-qr-status" class="lpa-qr-status" role="status" aria-live="polite"></p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Panel 2: Activation Console Table -->
+      <div id="panel-activations" class="admin-tabpanel" role="tabpanel" aria-labelledby="tab-activations" hidden>
+        <div class="admin-toolbar">
+          <div class="admin-toolbar-left">
+            <h2 id="activations-heading" style="margin:0;font-size:20px;">Activation Records</h2>
+            <span id="refresh-status" class="admin-refresh-pill">Auto-refresh: 5s</span>
+          </div>
+          <div class="admin-toolbar-right">
+            <search class="admin-search-box admin-inline-field">
+              <label for="activation-search">Search</label>
+              <input id="activation-search" type="search" class="lpa-input admin-search-input" placeholder="ID, phone, note, or LPA…" aria-label="Search activations">
+            </search>
+            <button id="new-activation-btn" type="button" class="lpa-primary-btn admin-inline-btn">+ New Activation</button>
+          </div>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="activations-heading" class="admin-table-wrap">
+          <table id="activations-table" class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Phone &amp; Note</th>
+                <th scope="col">Status</th>
+                <th scope="col">LPA Code</th>
+                <th scope="col">Created</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="activations-list"></tbody>
+          </table>
+          <div id="empty-state" style="padding:44px 20px;text-align:center;color:var(--muted);" hidden>
+            <p id="empty-state-title" style="margin:0 0 6px;font-weight:600;color:var(--ink);">No activations yet</p>
+            <p id="empty-state-sub" style="margin:0;font-size:14px;">Click &quot;+ New Activation&quot; above to create your first activation link.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Persistent Generated eSIM History Sorted by Date & Time -->
+      <div id="panel-history" class="admin-tabpanel" role="tabpanel" aria-labelledby="tab-history" hidden>
+        <div class="admin-toolbar">
+          <div class="admin-toolbar-left">
+            <h2 id="history-heading" style="margin:0;font-size:20px;">Generated eSIM History</h2>
+          </div>
+          <div class="admin-toolbar-right">
+            <search class="admin-search-box admin-inline-field">
+              <label for="history-search">Search</label>
+              <input id="history-search" type="search" class="lpa-input admin-search-input" placeholder="Phone, SM-DP+, or code…" aria-label="Search generated history">
+            </search>
+            <div class="admin-inline-field is-compact">
+              <label for="history-sort">Sort</label>
+              <select id="history-sort" name="historySort" class="lpa-select custom-select admin-sort-select" aria-label="Sort generated history">
+                <option value="desc" selected>Newest first</option>
+                <option value="asc">Oldest first</option>
+              </select>
+            </div>
+            <button id="clear-history-btn" type="button" class="lpa-action-btn admin-action-inline is-danger">Clear History</button>
+          </div>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="history-heading" class="admin-table-wrap">
+          <table id="history-table" class="admin-table is-history">
+            <thead>
+              <tr>
+                <th scope="col">Date &amp; Time</th>
+                <th scope="col">Phone</th>
+                <th scope="col">eSIM Details</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-list"></tbody>
+          </table>
+          <div id="history-empty-state" style="padding:44px 20px;text-align:center;color:var(--muted);" hidden>
+            <p id="history-empty-title" style="margin:0 0 6px;font-weight:600;color:var(--ink);">No generated eSIMs yet</p>
+            <p id="history-empty-sub" style="margin:0;font-size:14px;">Links generated in the Quick eSIM Link tab are automatically saved here with date and time.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 4: Backend Health, Storage Limits & Environment Status -->
+      <div id="panel-status" class="admin-tabpanel" role="tabpanel" aria-labelledby="tab-status" hidden>
+        <div class="admin-toolbar">
+          <div class="admin-toolbar-left">
+            <h2 id="status-heading" style="margin:0;font-size:20px;">Backend &amp; Storage Status</h2>
+            <span id="status-overall-pill" class="status-pill is-neutral">Checking…</span>
+          </div>
+          <div class="admin-toolbar-right">
+            <span id="status-checked-at" class="status-checked-text" role="status" aria-live="polite">Last checked: —</span>
+            <button id="status-refresh-btn" type="button" class="lpa-action-btn admin-action-inline">Refresh Status</button>
+          </div>
+        </div>
+
+        <div id="status-alert-banner" class="lpa-alert" role="alert" hidden></div>
+
+        <div class="admin-status-grid">
+          <section id="status-storage-card" class="utility-card status-card" aria-labelledby="status-storage-card-title">
+            <h3 id="status-storage-card-title" class="status-card-title">Storage &amp; Capacity Limits</h3>
+
+            <div class="status-meter-block">
+              <div class="status-meter-head">
+                <label id="status-storage-label" for="status-storage-meter">Database Storage</label>
+                <span id="status-storage-summary" class="status-meter-value" data-no-translate>—</span>
+              </div>
+              <progress id="status-storage-meter" class="status-meter" max="100" value="0" data-level="healthy" aria-labelledby="status-storage-label"></progress>
+              <p id="status-storage-note" class="status-meter-note">Checking storage limit…</p>
+            </div>
+
+            <div class="status-meter-block">
+              <div class="status-meter-head">
+                <label id="status-history-label" for="status-history-meter">Generated History Capacity</label>
+                <span id="status-history-summary" class="status-meter-value" data-no-translate>—</span>
+              </div>
+              <progress id="status-history-meter" class="status-meter" max="100" value="0" data-level="healthy" aria-labelledby="status-history-label"></progress>
+            </div>
+
+            <div id="status-limits-list" class="status-check-list"></div>
+          </section>
+
+          <section id="status-backend-card" class="utility-card status-card" aria-labelledby="status-backend-card-title">
+            <h3 id="status-backend-card-title" class="status-card-title">Backend &amp; Database Health</h3>
+            <dl id="status-backend-dl" class="status-kv-list"></dl>
+          </section>
+
+          <section id="status-data-card" class="utility-card status-card" aria-labelledby="status-data-card-title">
+            <h3 id="status-data-card-title" class="status-card-title">Stored Data Breakdown</h3>
+            <div id="status-data-grid" class="status-mini-grid"></div>
+          </section>
+
+          <section id="status-env-card" class="utility-card status-card" aria-labelledby="status-env-card-title">
+            <h3 id="status-env-card-title" class="status-card-title">Environment &amp; Security</h3>
+            <p class="status-card-sub">Only configuration state (Configured / Missing) is shown; secret values are never exposed.</p>
+            <div id="status-env-list" class="status-env-list"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Create / Edit Activation Modal -->
+  <dialog id="activation-dialog" class="sheet-dialog" closedby="any" aria-labelledby="activation-dialog-title">
+    <div class="sheet-head">
+      <h2 id="activation-dialog-title">New Activation</h2>
+      <button type="button" id="activation-dialog-close" class="sheet-close" aria-label="Close">×</button>
+    </div>
+
+    <form id="activation-form" class="admin-modal-form" novalidate>
+      <input type="hidden" id="edit-id">
+
+      <div class="admin-inline-field">
+        <label for="phone-input">Phone Number</label>
+        <input id="phone-input" type="tel" class="lpa-input" autocomplete="tel" placeholder="(718) 555-1234" maxlength="32">
+      </div>
+
+      <div class="admin-inline-field is-top">
+        <label for="notes-input">Notes</label>
+        <textarea id="notes-input" class="lpa-textarea" rows="2" placeholder="Optional notes..." maxlength="500"></textarea>
+      </div>
+
+      <div class="lpa-input-group" style="margin-bottom:4px;">
+        <label for="lpa-input">LPA Code</label>
+        <div class="admin-dialog-tools">
+          <button type="button" id="admin-qr-scan-btn" class="lpa-action-btn mobile-only-inline">Scan QR</button>
+          <label class="lpa-action-btn lpa-file-label">
+            <span>Upload QR</span>
+            <input type="file" id="admin-qr-file" accept="image/*" class="sr-only">
+          </label>
+          <button type="button" id="admin-cutout-btn" class="lpa-action-btn">Screen Cutout</button>
+          <button type="button" id="admin-manual-toggle" class="lpa-action-btn">Split Entry</button>
+        </div>
+
+        <div id="admin-qr-container" class="admin-scanner-box" hidden>
+          <div id="admin-qr-reader"></div>
+          <p id="admin-qr-status" style="margin:8px 0 0;font-size:13px;">Point camera at LPA QR code.</p>
+        </div>
+
+        <div id="admin-manual-fields" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;" hidden>
+          <div class="admin-inline-field">
+            <label for="admin-smdp-input">SM-DP+</label>
+            <input id="admin-smdp-input" type="text" class="lpa-input" placeholder="t-mobile.idemia.io">
+          </div>
+          <div class="admin-inline-field">
+            <label for="admin-code-input">Activation Code</label>
+            <input id="admin-code-input" type="text" class="lpa-input" placeholder="G0LFC-8Z7IK-HYBGV-6CLG1">
+          </div>
+          <button type="button" id="admin-apply-manual-btn" class="lpa-action-btn" style="width:100%;">Apply to LPA Code</button>
+        </div>
+
+        <textarea id="lpa-input" class="lpa-textarea admin-mono" rows="3" placeholder="LPA:1$smdp.example.com$ACTIVATION-CODE"></textarea>
+      </div>
+
+      <div id="status-section" class="lpa-input-group" style="margin-bottom:4px;">
+        <label id="status-group-label">Status</label>
+        <div class="status-segment" role="group" aria-labelledby="status-group-label">
+          <button type="button" data-status-btn="standby" aria-pressed="true">Standby</button>
+          <button type="button" data-status-btn="processing" aria-pressed="false">Processing</button>
+          <button type="button" data-status-btn="active" aria-pressed="false">Active</button>
+        </div>
+      </div>
+
+      <div id="link-preview" class="lpa-link-box" style="margin-bottom:4px;" hidden>
+        <div id="short-link-section" class="lpa-input-group" hidden>
+          <label for="short-link-display">Short Link</label>
+          <div style="display:flex;gap:8px;">
+            <input id="short-link-display" type="text" class="lpa-input admin-mono" readonly>
+            <button type="button" id="copy-short-link-btn" class="lpa-action-btn" style="width:auto;white-space:nowrap;">Copy</button>
+          </div>
+        </div>
+        <div class="lpa-input-group" style="margin-bottom:0;">
+          <label for="link-display">Customer Activation Link</label>
+          <div style="display:flex;gap:8px;">
+            <input id="link-display" type="text" class="lpa-input admin-mono" readonly>
+            <button type="button" id="copy-full-link-btn" class="lpa-action-btn" style="width:auto;white-space:nowrap;">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="form-error" class="lpa-alert is-error" role="alert" hidden></div>
+
+      <div class="sheet-actions" style="margin-top:8px;">
+        <button type="button" id="activation-cancel-btn" class="lpa-secondary-btn" style="margin-top:0;">Cancel</button>
+        <button type="submit" id="activation-submit-btn" class="lpa-primary-btn">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Change Password Modal -->
+  <dialog id="change-password-dialog" class="sheet-dialog" closedby="any" aria-labelledby="change-pw-title">
+    <div class="sheet-head">
+      <h2 id="change-pw-title">Change Password</h2>
+      <button type="button" id="change-pw-close" class="sheet-close" aria-label="Close">×</button>
+    </div>
+    <p id="default-pw-note" class="fine-print" style="margin-bottom:14px;" hidden>You are signed in with the bootstrap password. Set a permanent password (minimum 8 characters).</p>
+    <form id="change-password-form" novalidate>
+      <div class="lpa-input-group">
+        <label for="current-password">Current Password</label>
+        <input id="current-password" type="password" class="lpa-input" autocomplete="current-password" required>
+      </div>
+      <div class="lpa-input-group">
+        <label for="new-password">New Password</label>
+        <input id="new-password" type="password" class="lpa-input" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div class="lpa-input-group">
+        <label for="confirm-password">Confirm New Password</label>
+        <input id="confirm-password" type="password" class="lpa-input" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div id="change-pw-error" class="lpa-alert is-error" role="alert" hidden></div>
+      <div class="sheet-actions" style="margin-top:16px;">
+        <button type="button" id="skip-pw-btn" class="lpa-secondary-btn" style="margin-top:0;" hidden>Skip for now</button>
+        <button type="submit" class="lpa-primary-btn">Update Password</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Reset Password Modal -->
+  <dialog id="reset-password-dialog" class="sheet-dialog" closedby="any" aria-labelledby="reset-pw-title">
+    <div class="sheet-head">
+      <h2 id="reset-pw-title">Reset Password</h2>
+      <button type="button" id="reset-pw-close" class="sheet-close" aria-label="Close">×</button>
+    </div>
+    <form id="reset-password-form" novalidate>
+      <div class="lpa-input-group">
+        <label for="reset-token-input">Admin Reset Token</label>
+        <input id="reset-token-input" type="password" class="lpa-input" autocomplete="off" required>
+      </div>
+      <div class="lpa-input-group">
+        <label for="reset-new-password">New Password</label>
+        <input id="reset-new-password" type="password" class="lpa-input" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div class="lpa-input-group">
+        <label for="reset-confirm-password">Confirm New Password</label>
+        <input id="reset-confirm-password" type="password" class="lpa-input" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div id="reset-pw-error" class="lpa-alert is-error" role="alert" hidden></div>
+      <div id="reset-pw-success" class="lpa-alert is-ok" role="status" hidden></div>
+      <div class="sheet-actions" style="margin-top:16px;">
+        <button type="button" id="reset-cancel-btn" class="lpa-secondary-btn" style="margin-top:0;">Cancel</button>
+        <button type="submit" class="lpa-primary-btn">Reset Password</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Delete Confirmation Modal -->
+  <dialog id="delete-dialog" class="sheet-dialog" closedby="any" aria-labelledby="delete-title">
+    <div class="sheet-head">
+      <h2 id="delete-title">Delete Activation?</h2>
+      <button type="button" id="delete-close" class="sheet-close" aria-label="Close">×</button>
+    </div>
+    <p style="color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 16px;">This action cannot be undone. The customer link will stop working.</p>
+    <div id="delete-error" class="lpa-alert is-error" role="alert" hidden></div>
+    <div class="sheet-actions">
+      <button type="button" id="delete-cancel-btn" class="lpa-secondary-btn" style="margin-top:0;">Cancel</button>
+      <button type="button" id="delete-confirm-btn" class="lpa-primary-btn">Delete</button>
+    </div>
+  </dialog>
+
+  <footer>
+    <a class="brand" href="/?stay=1">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+    <span>© <span data-year>2026</span> EZRefill</span>
+    <div class="footer-links">
+      <a href="/privacy/">Privacy</a>
+      <a href="/store-information/">Store information</a>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/admin.ts"></script>
+</body>
+</html>

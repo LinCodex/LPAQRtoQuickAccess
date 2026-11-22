@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZRefill">
+  <meta name="description" content="Check your eSIM activation readiness and install your profile with one tap at EZRefill.">
+  <title>eSIM Activation — EZRefill 椰子通讯</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/utility.css">
+  <script src="/lang-init.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header compact-header">
+    <a class="brand" href="/" aria-label="EZRefill home">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+    <div class="header-actions">
+      <button class="language-toggle" aria-label="切换为中文">中文</button>
+    </div>
+  </header>
+
+  <main id="main" class="utility-page">
+    <div class="utility-shell">
+      <div class="utility-header">
+        <p class="eyebrow">EZREFILL / ESIM ACTIVATION</p>
+        <h1>eSIM Activation</h1>
+      </div>
+
+      <section class="utility-card" aria-label="Activation status">
+        <div class="utility-card-head">
+          <div class="esim-icon-circle" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="2"/>
+              <path d="M8.5 8.5a5 5 0 0 0 0 7"/>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+              <path d="M5.5 5.5a9.2 9.2 0 0 0 0 13"/>
+              <path d="M18.5 5.5a9.2 9.2 0 0 1 0 13"/>
+            </svg>
+          </div>
+          <span id="status-badge" class="status-pill status-standby" hidden>Standby</span>
+        </div>
+
+        <div class="esim-status-box">
+          <p id="act-desc" class="esim-desc">Loading activation…</p>
+
+          <div id="phone-display" class="esim-phone-box" hidden>
+            <span>Phone Number</span>
+            <strong id="phone-number"></strong>
+          </div>
+
+          <button id="activate-btn" type="button" class="lpa-primary-btn" hidden>Activate Now</button>
+          <button id="standby-btn" type="button" class="lpa-primary-btn" disabled hidden>Awaiting Activation</button>
+          <button id="processing-btn" type="button" class="lpa-primary-btn" disabled hidden>Processing…</button>
+
+          <div id="error-div" class="lpa-alert is-error" role="alert" hidden>Activation not found.</div>
+        </div>
+      </section>
+
+      <section class="offerings-section esim-support-section" aria-labelledby="offerings-heading">
+        <h2 id="offerings-heading" class="offerings-heading">Need Help?</h2>
+        <div class="support-grid">
+          <button type="button" class="support-card" data-offering="contact">
+            <span class="support-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/>
+                <circle cx="12" cy="11" r="2.2"/>
+              </svg>
+            </span>
+            <span class="support-text">
+              <strong>Visit or Call Store</strong>
+              <span>Flushing · Daily 10 AM – 7 PM</span>
+            </span>
+          </button>
+
+          <button type="button" class="support-card" data-offering="accessories">
+            <span class="support-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14a8 8 0 0 1 16 0"/>
+                <rect x="3" y="13" width="4" height="6" rx="2"/>
+                <rect x="17" y="13" width="4" height="6" rx="2"/>
+              </svg>
+            </span>
+            <span class="support-text">
+              <strong>Store Accessories</strong>
+              <span>Chargers, cables &amp; $5 glass</span>
+            </span>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <a class="brand" href="/">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+      <span>© <span data-year>2026</span> EZRefill</span>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy</a>
+        <a href="/store-information/">Store information</a>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="instructions-dialog" class="sheet-dialog is-bottom-sheet" closedby="any" aria-labelledby="instr-title">
+    <div class="sheet-head">
+      <h2 id="instr-title">Quick Instructions</h2>
+      <button type="button" id="instr-close" class="sheet-close" aria-label="Close">×</button>
+    </div>
+    <div class="esim-steps-box">
+      <ol>
+        <li>Once redirected to the iPhone eSIM screen, tap Activate.</li>
+        <li>Wait about 1 minute for activation to complete.</li>
+      </ol>
+      <p class="esim-wifi-note">Stay connected to Wi-Fi during activation.</p>
+    </div>
+    <a id="proceed-btn" href="#" class="lpa-primary-btn" style="margin-top:16px;">Proceed to Activate</a>
+  </dialog>
+
+  <dialog id="store-sheet-dialog" class="sheet-dialog is-bottom-sheet" closedby="any" aria-label="Store Support"></dialog>
+
+  <script type="module" src="/src/activate.ts"></script>
+</body>
+</html>

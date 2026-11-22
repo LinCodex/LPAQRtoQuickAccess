@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /viewer.html
+Disallow: /redirect
+Disallow: /activate
+Disallow: /s/
+
+Sitemap: https://ezrefillny.net/sitemap.xml

@@ -1,412 +1,460 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="EZRefill">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
-    <title>EzRefill eSIM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-            background-color: #f2f2f7;
-            color: #1d1d1f;
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
-            -webkit-font-smoothing: antialiased;
-        }
-        *::-webkit-scrollbar { display: none; }
-        * { -ms-overflow-style: none; scrollbar-width: none; }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(40px) saturate(120%);
-            -webkit-backdrop-filter: blur(40px) saturate(120%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0, 0, 0, 0.05);
-            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
-        }
-        .glass-btn {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.6), 0 4px 10px rgba(0,0,0,0.05);
-        }
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .animate-enter { opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .delay-100 { animation-delay: 100ms; }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .active-scale:active { transform: scale(0.95); }
-        @keyframes softPulse {
-            0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-            50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        }
-        .animate-soft-pulse { animation: softPulse 3s infinite ease-in-out; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
-        .mesh-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background: radial-gradient(circle at 50% 10%, #ffffff 0%, #f2f2f7 80%);
-        }
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.5;
-        }
-        .cfg-btn {
-            border: 1px solid #e5e7eb;
-            background: #f9fafb;
-            color: #1f2937;
-            transition: all 0.2s ease;
-        }
-        .cfg-btn.selected {
-            background: #000000;
-            color: #ffffff;
-            border-color: #000000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZRefill">
+  <meta name="description" content="One-tap eSIM activation setup at EZRefill in Flushing.">
+  <title>eSIM Activation — EZRefill 椰子通讯</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/utility.css">
+  <link rel="stylesheet" href="/src/redirect-ui.css">
+  <script src="/lang-init.js"></script>
 </head>
-<body class="h-screen w-full flex flex-col overflow-hidden pb-safe pt-safe selection:bg-black selection:text-white">
-    <div class="mesh-bg">
-        <div class="orb w-80 h-80 bg-blue-100 top-[-50px] left-[-50px] animate-pulse opacity-60" style="animation-duration: 8s;"></div>
-        <div class="orb w-72 h-72 bg-purple-100 bottom-[10%] right-[-20px] animate-pulse opacity-60" style="animation-duration: 10s;"></div>
-        <div class="orb w-48 h-48 bg-green-50 top-[40%] left-[30%] animate-pulse opacity-40" style="animation-duration: 12s;"></div>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header compact-header">
+    <a class="brand" href="/" aria-label="EZRefill home">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+    <div class="header-actions">
+      <button class="language-toggle" aria-label="切换为中文">中文</button>
     </div>
+  </header>
 
-    <div class="px-6 py-4 flex justify-between items-center z-10 animate-enter">
-        <div>
-            <h1 class="text-xl font-bold tracking-tight text-black">椰子通讯</h1>
-            <p id="txt-brand-sub" class="text-[11px] text-gray-500 font-semibold tracking-wide uppercase">EzRefill</p>
+  <main id="main" class="utility-page">
+    <div id="esim-shell" class="utility-shell esim-shell" data-state="invalid" data-step="1" style="--active-step: 1">
+      <div id="wechat-safari-banner" class="esim-wechat-banner" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <polygon points="15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6 15.5 8.5" fill="currentColor" fill-opacity="0.2"/>
+        </svg>
+        <p>Opened in WeChat? Tap ··· at top-right and choose Open in Safari.</p>
+      </div>
+
+      <!-- Unified Glanceable Top Activation Card -->
+      <section class="utility-card esim-top-card">
+        <div class="esim-top-bar">
+          <div class="esim-hero-status">
+            <span class="esim-status-badge state-ready">
+              <span class="status-dot is-ok" aria-hidden="true"></span>
+              <span>Ready to Install</span>
+            </span>
+            <span class="esim-status-badge state-standby">
+              <span class="status-dot is-warn" aria-hidden="true"></span>
+              <span>Standby</span>
+            </span>
+            <span class="esim-status-badge state-processing">
+              <svg class="esim-spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span>Processing</span>
+            </span>
+            <span class="esim-status-badge state-polling">
+              <svg class="esim-spin-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span>Checking Status</span>
+            </span>
+            <span class="esim-status-badge state-invalid">
+              <span class="status-dot is-err" aria-hidden="true"></span>
+              <span>Link Unavailable</span>
+            </span>
+          </div>
+
+          <div class="esim-meta-chips">
+            <span class="esim-meta-chip">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+              <span>Wi-Fi</span>
+            </span>
+            <span class="esim-meta-chip">~1 Min</span>
+            <span class="esim-meta-chip">iOS 17.4+</span>
+          </div>
         </div>
-        <button onclick="toggleLanguage()" class="glass-btn px-3 py-1.5 rounded-full flex items-center gap-1.5 active-scale">
-            <i class="ph-bold ph-translate text-gray-700 text-sm"></i>
-            <span id="txt-lang-btn" class="text-xs font-bold text-gray-800">EN / 中</span>
-        </button>
-    </div>
 
-    <div class="flex-1 px-5 pb-4 flex flex-col justify-start overflow-y-auto gap-3 z-0 pt-2">
-        <div class="glass-panel rounded-[2rem] p-6 flex flex-col items-center justify-center text-center relative overflow-hidden flex-shrink-0 animate-enter delay-100 min-h-[45vh]">
-            <div class="w-16 h-16 bg-gradient-to-tr from-white/80 to-gray-50/50 rounded-full flex items-center justify-center shadow-sm mb-4 relative border border-white/60">
-                <i class="ph-duotone ph-sim-card text-3xl text-black"></i>
-                <div class="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-white">
-                    <i class="ph-bold ph-check text-white text-[10px]"></i>
+        <div class="esim-top-title-row">
+          <div class="esim-top-copy">
+            <h1>One-Tap eSIM Activation</h1>
+            <p class="esim-hero-sub">Official fast channel · Set up in 1 minute</p>
+          </div>
+          <div class="esim-sim-emblem" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="2"/>
+              <path d="M8.5 8.5a5 5 0 0 0 0 7"/>
+              <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+              <path d="M5.5 5.5a9.2 9.2 0 0 0 0 13"/>
+              <path d="M18.5 5.5a9.2 9.2 0 0 1 0 13"/>
+            </svg>
+          </div>
+        </div>
+
+        <div id="redirect-phone-box" class="esim-phone-box" hidden>
+          <div class="esim-phone-left">
+            <span class="esim-phone-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2.5"/>
+                <line x1="10" y1="18" x2="14" y2="18"/>
+              </svg>
+            </span>
+            <div class="esim-phone-meta">
+              <span>Assigned Number</span>
+              <strong id="redirect-phone-number"></strong>
+            </div>
+          </div>
+          <button id="copy-phone-btn" class="esim-copy-chip" type="button" aria-label="Copy phone number">
+            <span class="chip-idle">Copy</span>
+            <span class="chip-done" aria-hidden="true">Copied</span>
+          </button>
+        </div>
+        <p id="redirect-phone-status" class="sr-only" role="status"></p>
+
+        <div class="esim-cta-wrap">
+          <a id="activate-btn" class="esim-hero-cta" aria-disabled="true" role="link">
+            <span class="esim-cta-shine" aria-hidden="true"></span>
+            <span class="esim-cta-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="2" width="12" height="20" rx="2.5"/>
+                <path d="M9.5 11.5l2 2 3.5-3.5"/>
+              </svg>
+            </span>
+            <span class="esim-cta-copy">
+              <strong id="activate-btn-title">Activate eSIM Now</strong>
+              <span id="activate-btn-sub">Opens iPhone eSIM setup</span>
+            </span>
+            <span class="esim-cta-arrow" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 6 15 12 9 18"/>
+              </svg>
+            </span>
+          </a>
+        </div>
+
+        <div id="redirect-error" class="lpa-alert is-error" role="alert" hidden>
+          Invalid or unsupported activation link. Ask the store for a fresh link.
+        </div>
+
+        <div id="poll-meta" class="esim-poll-meta" hidden>
+          <svg class="esim-spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          <span>Checking for updates automatically…</span>
+        </div>
+      </section>
+
+      <!-- Glanceable Side-by-Side iPhone 18 Pro Live Guide & 4-Step Checklist -->
+      <section class="utility-card esim-guide-card" id="esim-guide-card">
+        <div class="esim-guide-head">
+          <div class="esim-section-head">
+            <span class="esim-vbar" aria-hidden="true"></span>
+            <h2 id="guide-heading">Activation Walkthrough</h2>
+          </div>
+          <button id="guide-motion-toggle" class="esim-motion-btn" type="button" aria-controls="iphone18-stage">
+            <span class="label-pause">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="4" width="4" height="16" rx="1"/>
+                <rect x="14" y="4" width="4" height="16" rx="1"/>
+              </svg>
+              <span>Pause</span>
+            </span>
+            <span class="label-play">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <polygon points="7 4 20 12 7 20 7 4"/>
+              </svg>
+              <span>Play</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="esim-glance-grid">
+          <!-- True iPhone 18 Pro Geometry (402x874 screen, 71.85x150.01 mm squircle case, 15.66x6.07 mm Dynamic Island) -->
+          <div id="iphone18-stage" class="iphone18-stage" aria-hidden="true">
+            <div class="iphone18-frame">
+              <svg class="iphone18-chassis" viewBox="0 0 439.32 905.87" fill="none">
+                <defs>
+                  <linearGradient id="ip18FrameGrad" x1="0" y1="0" x2="439.32" y2="905.87" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#4a4a52"/>
+                    <stop offset="0.25" stop-color="#2c2c31"/>
+                    <stop offset="0.55" stop-color="#3d3d44"/>
+                    <stop offset="1" stop-color="#1e1e22"/>
+                  </linearGradient>
+                  <linearGradient id="ip18RimGrad" x1="0" y1="0" x2="439.32" y2="905.87" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#8e8e98"/>
+                    <stop offset="0.5" stop-color="#52525b"/>
+                    <stop offset="1" stop-color="#71717a"/>
+                  </linearGradient>
+                </defs>
+                <!-- Left hardware buttons (Action, Vol+, Vol-) at measured iPhone 18 Pro offsets -->
+                <rect x="0" y="186.17" width="3.4" height="41.67" rx="1.7" fill="#484850"/>
+                <rect x="0" y="258.64" width="3.4" height="67.63" rx="1.7" fill="#484850"/>
+                <rect x="0" y="344.39" width="3.4" height="67.63" rx="1.7" fill="#484850"/>
+                <!-- Right Side button -->
+                <rect x="435.92" y="281.89" width="3.4" height="106.89" rx="1.7" fill="#484850"/>
+                <!-- Continuous squircle Titanium outer case ([19.43,0] [13.9,0.04] [8.46,0.92] [3.8,3.8] mm) -->
+                <path d="M 120.05,0 L 319.27,0 C 378.6,0 396.8,6.1 413.65,22.95 C 430.5,39.8 436.60,58.0 436.60,117.33 L 436.60,788.54 C 436.60,847.87 430.5,866.07 413.65,882.92 C 396.8,899.77 378.6,905.87 319.27,905.87 L 120.05,905.87 C 60.7,905.87 42.5,899.77 25.67,882.92 C 8.8,866.07 2.72,847.87 2.72,788.54 L 2.72,117.33 C 2.72,58.0 8.8,39.8 25.67,22.95 C 42.5,6.1 60.7,0 120.05,0 Z" fill="url(#ip18FrameGrad)" stroke="url(#ip18RimGrad)" stroke-width="2"/>
+                <!-- Inner pitch-black display bezel -->
+                <path d="M 120.05,6.5 L 319.27,6.5 C 374.5,6.5 391.8,12.1 407.5,27.8 C 423.2,43.5 429.8,60.8 429.8,117.33 L 429.8,788.54 C 429.8,845.1 423.2,862.4 407.5,878.1 C 391.8,893.8 374.5,899.37 319.27,899.37 L 120.05,899.37 C 64.8,899.37 47.5,893.8 31.8,878.1 C 16.1,862.4 9.52,845.1 9.52,788.54 L 9.52,117.33 C 9.52,60.8 16.1,43.5 31.8,27.8 C 47.5,12.1 64.8,6.5 120.05,6.5 Z" fill="#050507"/>
+              </svg>
+
+              <div class="iphone18-screen">
+                <div class="ios-statusbar">
+                  <span class="ios-time" data-no-translate>9:41</span>
+                  <div class="ios-status-right">
+                    <span class="ios-net-5g" data-no-translate>5G</span>
+                    <span class="ios-sig-bars">
+                      <i class="sb-1"></i>
+                      <i class="sb-2"></i>
+                      <i class="sb-3"></i>
+                      <i class="sb-4"></i>
+                    </span>
+                    <svg class="ios-wifi-svg" width="12" height="9" viewBox="0 0 24 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                      <path d="M2 7a14 14 0 0 1 20 0"/>
+                      <path d="M6.5 11.5a8 8 0 0 1 11 0"/>
+                      <circle cx="12" cy="16" r="1.6" fill="currentColor" stroke="none"/>
+                    </svg>
+                    <span class="ios-battery"><span></span></span>
+                  </div>
                 </div>
+
+                <div class="iphone18-screen-track">
+                  <!-- Screen 1: Actual EZRefill Safari page -->
+                  <div class="phone-page phone-page-1">
+                    <div class="ip-safari-bar">
+                      <span class="ip-url-pill" data-no-translate>ezrefillny.net</span>
+                    </div>
+                    <div class="ip-mini-card">
+                      <div class="ip-mini-status">
+                        <span class="ip-mini-dot"></span>
+                        <span>Ready to Install</span>
+                      </div>
+                      <strong class="ip-mini-heading">One-Tap eSIM Activation</strong>
+                      <div class="ip-mini-num-row">
+                        <span class="ip-mini-label">Assigned Number</span>
+                        <span id="walkthrough-phone-number" class="ip-mini-val" data-no-translate>(123) 456-7890</span>
+                      </div>
+                      <div class="ip-tap-target">
+                        <span class="ip-btn is-orange">Activate eSIM Now</span>
+                        <span class="ip-ripple is-orange"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Screen 2: Real iOS "Activate New eSIM" system screen -->
+                  <div class="phone-page phone-page-2">
+                    <div class="ip-ios-topbar">
+                      <span class="ip-ios-top-cancel">Cancel</span>
+                    </div>
+                    <div class="ip-ios-body">
+                      <div class="ip-ios-emblem">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="10" r="1.6" fill="currentColor" stroke="none"/>
+                          <path d="M12 11.8v7.2"/>
+                          <path d="M8.5 7a5 5 0 0 0 0 6"/>
+                          <path d="M15.5 7a5 5 0 0 1 0 6"/>
+                          <path d="M5.5 4.5a9 9 0 0 0 0 11"/>
+                          <path d="M18.5 4.5a9 9 0 0 1 0 11"/>
+                        </svg>
+                      </div>
+                      <strong class="ip-ios-title">Activate New eSIM</strong>
+                      <p class="ip-ios-sub">Allow this if you requested a new eSIM from your carrier.</p>
+                    </div>
+                    <div class="ip-ios-footer">
+                      <div class="ip-tap-target">
+                        <span class="ip-btn is-ios-blue">Allow</span>
+                        <span class="ip-ripple is-blue"></span>
+                      </div>
+                      <span class="ip-ios-secondary-btn">Don’t Allow</span>
+                    </div>
+                  </div>
+
+                  <!-- Screen 3: Real iOS "Activate eSIM" system screen -->
+                  <div class="phone-page phone-page-3">
+                    <div class="ip-ios-topbar">
+                      <span class="ip-ios-top-cancel">Cancel</span>
+                    </div>
+                    <div class="ip-ios-body">
+                      <div class="ip-ios-emblem">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="10" r="1.6" fill="currentColor" stroke="none"/>
+                          <path d="M12 11.8v7.2"/>
+                          <path d="M8.5 7a5 5 0 0 0 0 6"/>
+                          <path d="M15.5 7a5 5 0 0 1 0 6"/>
+                          <path d="M5.5 4.5a9 9 0 0 0 0 11"/>
+                          <path d="M18.5 4.5a9 9 0 0 1 0 11"/>
+                        </svg>
+                      </div>
+                      <strong class="ip-ios-title">Activate eSIM</strong>
+                      <p class="ip-ios-sub">An eSIM is ready to be activated on this iPhone.</p>
+                      <div class="ip-ios-activating">
+                        <span class="ip-ios-spinner"></span>
+                        <span>Connecting to Network…</span>
+                      </div>
+                    </div>
+                    <div class="ip-ios-footer">
+                      <div class="ip-tap-target">
+                        <span class="ip-btn is-ios-blue">Continue</span>
+                        <span class="ip-ripple is-blue"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Screen 4: Real iOS "Cellular Setup Complete" system screen -->
+                  <div class="phone-page phone-page-4">
+                    <div class="ip-ios-topbar"></div>
+                    <div class="ip-ios-body">
+                      <div class="ip-ios-emblem">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="10" r="1.6" fill="currentColor" stroke="none"/>
+                          <path d="M12 11.8v7.2"/>
+                          <path d="M8.5 7a5 5 0 0 0 0 6"/>
+                          <path d="M15.5 7a5 5 0 0 1 0 6"/>
+                          <path d="M5.5 4.5a9 9 0 0 0 0 11"/>
+                          <path d="M18.5 4.5a9 9 0 0 1 0 11"/>
+                        </svg>
+                      </div>
+                      <strong class="ip-ios-title">Cellular Setup Complete</strong>
+                      <p class="ip-ios-sub">Your eSIM is now active and ready to use.</p>
+                    </div>
+                    <div class="ip-ios-footer">
+                      <div class="ip-tap-target">
+                        <span class="ip-btn is-ios-blue">Done</span>
+                        <span class="ip-ripple is-blue"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ios-home-indicator"></div>
+              </div>
+
+              <!-- Cutout layer strictly above clipped screen: Dynamic Island + top speaker slit + inner rim -->
+              <svg class="iphone18-cutout" viewBox="0 0 439.32 905.87" fill="none">
+                <!-- Earpiece micro-slit -->
+                <rect x="195.66" y="7.5" width="48" height="3.2" rx="1.6" fill="#18181c"/>
+                <!-- Measured iPhone 18 Pro Dynamic Island (94.57 x 36.66 pt at center 219.66, 48.25) -->
+                <rect x="172.38" y="29.92" width="94.57" height="36.66" rx="18.33" fill="#000000"/>
+                <circle cx="192" cy="48.25" r="5.5" fill="#0d0f17"/>
+                <circle cx="248.5" cy="48.25" r="7.2" fill="#0f1320" stroke="#1b2236" stroke-width="1"/>
+                <circle cx="250.3" cy="46.4" r="2.1" fill="#3b5998" fill-opacity="0.8"/>
+                <!-- Concentric inner screen glass border -->
+                <rect x="18.66" y="15.94" width="402" height="874" rx="62.4" stroke="rgb(255 255 255 / 0.14)" stroke-width="1.2"/>
+              </svg>
             </div>
-            <h2 id="txt-act-title" class="text-xl font-bold text-gray-900 mb-2">eSIM Activation</h2>
-            <p id="txt-act-desc" class="text-sm text-gray-500 mb-4 leading-relaxed max-w-[260px] font-medium">One tap to download your profile.</p>
-            
-            <div id="instructions" class="w-full bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-4 text-left">
-                <p class="text-xs font-bold text-blue-800 mb-2 flex items-center gap-1.5"><i class="ph-bold ph-info"></i> <span id="txt-instr-title">Quick Instructions</span></p>
-                <ol class="text-xs text-blue-700 space-y-1.5 list-decimal list-inside leading-relaxed">
-                    <li id="txt-instr-1">Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong></li>
-                    <li id="txt-instr-2">Wait approximately <strong>1 minute</strong> for activation to complete</li>
-                </ol>
-                <p class="text-xs text-amber-700 mt-3 flex items-center gap-1.5 font-semibold"><i class="ph-bold ph-wifi-high"></i> <span id="txt-instr-wifi">Important: Stay connected to Wi-Fi during activation</span></p>
-            </div>
-            <a id="activateBtn" href="#" class="active-scale animate-soft-pulse w-full bg-black text-white h-12 rounded-xl font-semibold text-base flex items-center justify-center shadow-md gap-2 relative z-10 no-underline">
-                <span id="btnText">Activate Now</span>
-            </a>
-            <div id="errorDiv" class="hidden mt-4 w-full bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 text-sm font-medium">
-                <i class="ph-bold ph-warning-circle mr-2"></i>
-                <span id="errorText">Invalid link. Please try again.</span>
-            </div>
-            <div id="refreshIndicator" class="hidden mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-400">
-                <i class="ph-bold ph-arrows-clockwise" id="refreshIcon"></i>
-                <span id="refreshStatus">5s</span>
-            </div>
+          </div>
+
+          <!-- All 4 steps visible at a glance right beside the iPhone 18 Pro -->
+          <div class="esim-step-list" role="group" aria-label="Activation steps">
+            <button type="button" class="esim-step-row" id="step-tab-1" aria-pressed="true" data-step-target="1">
+              <span class="step-row-num" data-no-translate>1</span>
+              <span class="step-row-text">
+                <strong>Tap “Activate eSIM Now”</strong>
+                <span>Press the orange button above in Safari</span>
+              </span>
+            </button>
+
+            <button type="button" class="esim-step-row" id="step-tab-2" aria-pressed="false" data-step-target="2">
+              <span class="step-row-num" data-no-translate>2</span>
+              <span class="step-row-text">
+                <strong>Tap “Allow” on iPhone</strong>
+                <span>Confirm Apple’s eSIM popup prompt</span>
+              </span>
+            </button>
+
+            <button type="button" class="esim-step-row" id="step-tab-3" aria-pressed="false" data-step-target="3">
+              <span class="step-row-num" data-no-translate>3</span>
+              <span class="step-row-text">
+                <strong>Tap “Continue” &amp; Wait ~1 Min</strong>
+                <span>Stay connected to Wi-Fi while installing</span>
+              </span>
+            </button>
+
+            <button type="button" class="esim-step-row" id="step-tab-4" aria-pressed="false" data-step-target="4">
+              <span class="step-row-num" data-no-translate>4</span>
+              <span class="step-row-text">
+                <strong>Ready to Use</strong>
+                <span>Tap Done once 5G signal bars appear</span>
+              </span>
+            </button>
+          </div>
         </div>
 
-        <div class="flex flex-col flex-1">
-            <div class="flex items-center justify-between mb-2 px-1 animate-enter delay-200">
-                <h3 id="txt-shop-title" class="text-sm font-semibold text-gray-500">Store Offerings</h3>
-            </div>
-            <div class="flex flex-col gap-2 w-full">
-                <button onclick="openProduct('iphone')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
-                        <i class="ph-fill ph-device-mobile-camera text-gray-900"></i>
-                    </div>
-                    <div class="flex-1 z-10">
-                        <h4 id="txt-p1-title" class="font-bold text-sm text-gray-900">iPhone 17</h4>
-                        <p id="txt-p1-sub" class="text-[11px] text-gray-500 font-medium">In Stock</p>
-                    </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
-                    </div>
-                    <i class="ph-duotone ph-device-mobile-camera absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
-                </button>
-                <button onclick="openProduct('accessories')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-200">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
-                        <i class="ph-fill ph-headphones text-gray-900"></i>
-                    </div>
-                    <div class="flex-1 z-10">
-                        <h4 id="txt-p2-title" class="font-bold text-sm text-gray-900">Accessories</h4>
-                        <p id="txt-p2-sub" class="text-[11px] text-gray-500 font-medium">Cables, Audio & More</p>
-                    </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
-                    </div>
-                    <i class="ph-duotone ph-headphones absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
-                </button>
-                <button onclick="openProduct('plans')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
-                        <i class="ph-fill ph-globe-hemisphere-east text-gray-900"></i>
-                    </div>
-                    <div class="flex-1 z-10">
-                        <h4 id="txt-p3-title" class="font-bold text-sm text-gray-900">Global Data</h4>
-                        <p id="txt-p3-sub" class="text-[11px] text-gray-500 font-medium">China & More</p>
-                    </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
-                    </div>
-                    <i class="ph-duotone ph-globe-hemisphere-east absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
-                </button>
-                <button onclick="openProduct('support')" class="glass-panel p-3 rounded-xl flex items-center gap-3 active-scale text-left h-[60px] relative overflow-hidden group animate-enter delay-300">
-                    <div class="w-10 h-10 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-lg flex-shrink-0">
-                        <i class="ph-fill ph-map-pin text-gray-900"></i>
-                    </div>
-                    <div class="flex-1 z-10">
-                        <h4 id="txt-p4-title" class="font-bold text-sm text-gray-900">Contact Us</h4>
-                        <p id="txt-p4-sub" class="text-[11px] text-gray-500 font-medium">Visit Store</p>
-                    </div>
-                    <div class="w-7 h-7 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/30 flex-shrink-0">
-                        <i class="ph-bold ph-caret-right text-xs text-gray-700"></i>
-                    </div>
-                    <i class="ph-duotone ph-map-pin absolute -right-4 top-1/2 -translate-y-1/2 text-[5rem] text-gray-400 opacity-10"></i>
-                </button>
-            </div>
+        <!-- Compact Glanceable Tips Bar inside the Guide Card -->
+        <div class="esim-compact-tips">
+          <div class="esim-compact-tip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+              <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+              <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            <span>Stay connected to Wi-Fi until activation finishes.</span>
+          </div>
+          <div class="esim-compact-tip">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <polygon points="15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6 15.5 8.5" fill="currentColor" fill-opacity="0.18"/>
+            </svg>
+            <span>If opened inside WeChat, tap ··· at top-right and choose “Open in Safari”.</span>
+          </div>
         </div>
+      </section>
+
+      <!-- Compact 2-Column Store Help Row (No Phones, No Plans) -->
+      <section class="offerings-section esim-support-section">
+        <div class="support-grid is-compact">
+          <button type="button" class="support-card" data-offering="contact">
+            <span class="support-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/>
+                <circle cx="12" cy="11" r="2.2"/>
+              </svg>
+            </span>
+            <span class="support-text">
+              <strong>Visit or Call Store</strong>
+              <span>Flushing · Daily 10 AM – 7 PM</span>
+            </span>
+          </button>
+
+          <button type="button" class="support-card" data-offering="accessories">
+            <span class="support-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14a8 8 0 0 1 16 0"/>
+                <rect x="3" y="13" width="4" height="6" rx="2"/>
+                <rect x="17" y="13" width="4" height="6" rx="2"/>
+              </svg>
+            </span>
+            <span class="support-text">
+              <strong>Store Accessories</strong>
+              <span>Chargers, cables &amp; $5 glass</span>
+            </span>
+          </button>
+        </div>
+      </section>
     </div>
 
-    <div id="productOverlay" class="fixed inset-0 z-50 pointer-events-none flex items-end justify-center">
-        <div id="dimmer" onclick="closeSheet()" class="absolute inset-0 bg-black/0 transition-all duration-300"></div>
-        <div id="bottomSheet" class="w-full glass-panel rounded-t-[2rem] p-6 pb-12 transform translate-y-full transition-transform duration-300 ease-out z-10 max-h-[85vh] overflow-y-auto border-b-0">
-            <div class="w-10 h-1 bg-black/20 rounded-full mx-auto mb-6"></div>
-            <div id="sheetContent" class="flex flex-col items-center text-center"></div>
-        </div>
-    </div>
+    <footer>
+      <a class="brand" href="/">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+      <span>© <span data-year>2026</span> EZRefill</span>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy</a>
+        <a href="/store-information/">Store information</a>
+      </div>
+    </footer>
+  </main>
 
-    <script>
-        // Auto-detect language based on device language
-        function detectLanguage() {
-            const browserLang = navigator.language || navigator.userLanguage || 'en';
-            // Check if Chinese (any variant: zh, zh-CN, zh-TW, zh-HK, etc.)
-            if (browserLang.toLowerCase().startsWith('zh')) {
-                return 'zh';
-            }
-            // Default to English for all other languages
-            return 'en';
-        }
-        
-        let currentLang = detectLanguage();
-        let iphoneConfig = { region: 'na', model: 'pro', storage: '256' };
-        const uiText = {
-            'en': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': '中文', 'txt-act-title': 'eSIM Activation', 'txt-act-desc': 'One tap to download your profile.', 'btnText': 'Activate Now', 'txt-shop-title': 'Store Offerings', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': 'In Stock', 'txt-p2-title': 'Accessories', 'txt-p2-sub': 'Cables, Audio & More', 'txt-p3-title': 'Global Data', 'txt-p3-sub': 'China & More', 'txt-p4-title': 'Contact Us', 'txt-p4-sub': 'Visit Store', 'errorText': 'Invalid link. Please try again.', 'txt-instr-title': 'Quick Instructions', 'txt-instr-wifi': 'Important: Stay connected to Wi-Fi during activation' },
-            'zh': { 'txt-brand-sub': 'EzRefill', 'txt-lang-btn': 'English', 'txt-act-title': 'eSIM 激活', 'txt-act-desc': '一键下载您的 eSIM 配置文件。', 'btnText': '立即激活', 'txt-shop-title': '精选商品', 'txt-p1-title': 'iPhone 17', 'txt-p1-sub': '现货供应', 'txt-p2-title': '精选配件', 'txt-p2-sub': '数据线，耳机等', 'txt-p3-title': '全球流量', 'txt-p3-sub': '中国与全球套餐', 'txt-p4-title': '联系我们', 'txt-p4-sub': '门店地址', 'errorText': '链接无效，请返回重试', 'txt-instr-title': '操作指南', 'txt-instr-wifi': '重要提示：激活期间请保持 Wi-Fi 连接' }
-        };
-        const instructionsText = {
-            'en': ['Once redirected to iPhone SIM activation screen, tap <strong>Activate</strong>', 'Wait approximately <strong>1 minute</strong> for activation to complete'],
-            'zh': ['跳转到 iPhone SIM 激活页面后，点击 <strong>激活</strong>', '等待约 <strong>1 分钟</strong> 完成激活']
-        };
-        const accessoriesList = [
-            { en: 'Charging Cable', zh: '充电数据线', icon: 'ph-plugs' },
-            { en: 'Power Adapter', zh: '充电头', icon: 'ph-lightning' },
-            { en: 'AirPods 4', zh: 'AirPods 4', icon: 'ph-headphones' },
-            { en: 'AirPods 4 Pro', zh: 'AirPods 4 Pro', icon: 'ph-headphones' },
-            { en: 'Screen Protector + Install', zh: '屏幕贴膜 + 安装', icon: 'ph-phone' },
-            { en: 'Transparent Case', zh: '透明保护壳', icon: 'ph-square' }
-        ];
-        const chinaPlans = {
-            en: { title: 'China High-Speed Data', validity30: '30 Days Validity', validity90: '90 Days Validity', btnOther: 'Inquire Other Countries', plans30: [{ gb: '3GB', price: '$30' }, { gb: '5GB', price: '$40' }, { gb: '10GB', price: '$50' }, { gb: '20GB', price: '$60' }], plans90: [{ gb: '50GB', price: '$110' }] },
-            zh: { title: '中国高速流量包', validity30: '30天 有效期', validity90: '90天 有效期', btnOther: '咨询其他国家', plans30: [{ gb: '3GB', price: '$30' }, { gb: '5GB', price: '$40' }, { gb: '10GB', price: '$50' }, { gb: '20GB', price: '$60' }], plans90: [{ gb: '50GB', price: '$110' }] }
-        };
-        const contactInfo = {
-            en: { title: 'Visit Us', subtitle: 'Come say hello.', address: '136-78 Roosevelt Ave, Flushing, NY 11354', phone: '718-509-5888', btnCall: 'Call Us', btnNav: 'Navigate' },
-            zh: { title: '门店地址', subtitle: '欢迎光临', address: '136-78 Roosevelt Ave, Flushing, NY 11354', phone: '718-509-5888', btnCall: '致电', btnNav: '导航' }
-        };
-        const iphoneLabels = {
-            en: { title: 'iPhone 17 Series', region_na: 'North America (eSIM Only)', region_hk: 'Hong Kong (Physical + eSIM)', storage_256: '256GB', storage_512: '512GB', model_pro: '17 Pro', model_max: '17 Pro Max', btn: 'Inquire Now' },
-            zh: { title: 'iPhone 17 系列', region_na: '美版 (仅 eSIM)', region_hk: '港版 (双卡/实体卡)', storage_256: '256GB', storage_512: '512GB', model_pro: '17 Pro', model_max: '17 Pro Max', btn: '立即咨询' }
-        };
+  <dialog id="store-sheet-dialog" class="sheet-dialog is-bottom-sheet" closedby="any" aria-label="Store Support"></dialog>
 
-        // Auto-refresh variables
-        let currentTargetUrl = null;
-        let refreshCountdown = 5;
-        let countdownInterval = null;
-        const activationId = new URLSearchParams(window.location.search).get('id');
-
-        async function checkForUpdates() {
-            if (!activationId) return;
-            
-            try {
-                const res = await fetch(`/api/activations/${activationId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.lpaCode && data.lpaCode !== currentTargetUrl) {
-                        // LPA code changed - reload page
-                        window.location.reload();
-                    }
-                }
-            } catch (e) {
-                console.error('Error checking for updates:', e);
-            }
-        }
-
-        function startAutoRefresh() {
-            const indicator = document.getElementById('refreshIndicator');
-            if (!indicator || !activationId) return;
-            
-            // Show the indicator
-            indicator.classList.remove('hidden');
-            
-            countdownInterval = setInterval(() => {
-                refreshCountdown--;
-                if (refreshCountdown <= 0) {
-                    document.getElementById('refreshStatus').textContent = 'Checking...';
-                    document.getElementById('refreshIcon').style.animation = 'spin 1s linear infinite';
-                    checkForUpdates().then(() => {
-                        refreshCountdown = 5;
-                        document.getElementById('refreshIcon').style.animation = '';
-                        document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
-                    });
-                } else {
-                    document.getElementById('refreshStatus').textContent = `${refreshCountdown}s`;
-                }
-            }, 1000);
-        }
-
-        (function() {
-            const params = new URLSearchParams(window.location.search);
-            const targetUrl = params.get('url');
-            currentTargetUrl = targetUrl;
-            const activateBtn = document.getElementById('activateBtn');
-            const errorDiv = document.getElementById('errorDiv');
-            if (!targetUrl) {
-                errorDiv.classList.remove('hidden');
-                activateBtn.classList.add('opacity-50', 'pointer-events-none');
-                // Start auto-refresh to check for LPA code updates
-                if (activationId) startAutoRefresh();
-                return;
-            }
-            activateBtn.href = targetUrl;
-            
-            // Apply detected language on page load
-            applyLanguage(currentLang);
-        })();
-        
-        function applyLanguage(lang) {
-            const texts = uiText[lang];
-            for (const [id, text] of Object.entries(texts)) {
-                const el = document.getElementById(id);
-                if (el) el.innerText = text;
-            }
-            // Update instruction list items
-            const instr = instructionsText[lang];
-            document.getElementById('txt-instr-1').innerHTML = instr[0];
-            document.getElementById('txt-instr-2').innerHTML = instr[1];
-        }
-
-        function toggleLanguage() {
-            currentLang = currentLang === 'en' ? 'zh' : 'en';
-            applyLanguage(currentLang);
-        }
-
-        function getIphonePrice() {
-            let base = iphoneConfig.region === 'na' ? (iphoneConfig.model === 'pro' ? 1300 : 1400) : (iphoneConfig.model === 'pro' ? 1550 : 1650);
-            if (iphoneConfig.storage === '512') base += 300;
-            return `$${base}`;
-        }
-
-        function renderIphoneContent() {
-            const labels = iphoneLabels[currentLang];
-            const price = getIphonePrice();
-            document.getElementById('sheetContent').innerHTML = `
-                <div class="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mb-3 shadow-inner"><i class="ph-fill ph-device-mobile-camera text-3xl text-gray-900"></i></div>
-                <h2 class="text-xl font-bold text-gray-900 mb-1">${labels.title}</h2>
-                <div class="text-3xl font-bold text-black mb-4 tracking-tight">${price}</div>
-                <div class="w-full space-y-4 mb-6">
-                    <div class="flex gap-2"><button onclick="setIphoneState('region', 'na')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'na' ? 'selected' : ''}">${labels.region_na}</button><button onclick="setIphoneState('region', 'hk')" class="cfg-btn flex-1 py-3 px-2 rounded-xl text-xs font-semibold ${iphoneConfig.region === 'hk' ? 'selected' : ''}">${labels.region_hk}</button></div>
-                    <div class="flex gap-2"><button onclick="setIphoneState('model', 'pro')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'pro' ? 'selected' : ''}">${labels.model_pro}</button><button onclick="setIphoneState('model', 'max')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.model === 'max' ? 'selected' : ''}">${labels.model_max}</button></div>
-                    <div class="flex gap-2"><button onclick="setIphoneState('storage', '256')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '256' ? 'selected' : ''}">${labels.storage_256}</button><button onclick="setIphoneState('storage', '512')" class="cfg-btn flex-1 py-3 rounded-xl text-xs font-semibold ${iphoneConfig.storage === '512' ? 'selected' : ''}">${labels.storage_512}</button></div>
-                </div>
-                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">${labels.btn}</button>`;
-        }
-
-        function renderAccessoriesContent() {
-            const title = currentLang === 'en' ? 'Accessories' : '精选配件';
-            const subtitle = currentLang === 'en' ? 'Available in store' : '店内现货';
-            let itemsHtml = accessoriesList.map(item => `<div class="flex items-center gap-3 p-3 bg-white/60 rounded-xl border border-white/40"><div class="w-8 h-8 bg-white/80 rounded-full flex items-center justify-center shadow-sm text-gray-700"><i class="ph-fill ${item.icon}"></i></div><span class="text-sm font-semibold text-gray-800 text-left flex-1">${currentLang === 'en' ? item.en : item.zh}</span></div>`).join('');
-            document.getElementById('sheetContent').innerHTML = `
-                <div class="w-16 h-16 bg-blue-50/80 rounded-full flex items-center justify-center mb-3 text-blue-600 shadow-inner"><i class="ph-fill ph-headphones text-3xl"></i></div>
-                <h2 class="text-xl font-bold text-gray-900 mb-1">${title}</h2><p class="text-sm font-medium text-gray-500 mb-6">${subtitle}</p>
-                <div class="grid grid-cols-1 gap-2 w-full mb-6">${itemsHtml}</div>
-                <button onclick="openProduct('support')" class="w-full bg-black text-white h-14 rounded-xl font-semibold text-lg active-scale shadow-lg">${currentLang === 'en' ? 'Check Availability' : '查询库存'}</button>`;
-        }
-
-        function renderPlansContent() {
-            const data = chinaPlans[currentLang];
-            const makePlanRow = (plan) => `<div class="flex justify-between items-center p-3 bg-white/60 rounded-lg border border-white/40 shadow-sm"><span class="font-bold text-gray-900">${plan.gb}</span><span class="font-semibold text-blue-600">${plan.price}</span></div>`;
-            document.getElementById('sheetContent').innerHTML = `
-                <div class="w-16 h-16 bg-green-50/80 rounded-full flex items-center justify-center mb-3 text-green-600 shadow-inner"><i class="ph-fill ph-globe-hemisphere-east text-3xl"></i></div>
-                <h2 class="text-xl font-bold text-gray-900 mb-6">${data.title}</h2>
-                <div class="w-full text-left mb-4"><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity30}</p><div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">${data.plans30.map(makePlanRow).join('')}</div></div>
-                <div class="w-full text-left mb-6"><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">${data.validity90}</p><div class="space-y-2 bg-white/30 p-2 rounded-xl border border-white/20">${data.plans90.map(makePlanRow).join('')}</div></div>
-                <button onclick="openProduct('support')" class="w-full bg-black/5 text-black h-12 rounded-xl font-semibold text-sm active-scale border border-black/10">${data.btnOther}</button>`;
-        }
-
-        function renderContactContent() {
-            const data = contactInfo[currentLang];
-            document.getElementById('sheetContent').innerHTML = `
-                <div class="w-20 h-20 bg-gray-50/80 rounded-full flex items-center justify-center mb-4 shadow-inner"><i class="ph-fill ph-map-pin text-4xl text-red-500"></i></div>
-                <h2 class="text-2xl font-bold mb-1 text-gray-900">${data.title}</h2><p class="text-sm font-medium text-gray-500 mb-6">${data.subtitle}</p>
-                <div class="w-full bg-white/50 rounded-xl p-6 mb-6 text-left border border-white/40 space-y-5 backdrop-blur-md">
-                    <div class="flex gap-3 items-start"><i class="ph-fill ph-map-pin text-gray-400 text-xl mt-1"></i><div><p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Address</p><p class="text-xl font-bold text-gray-900 leading-snug">${data.address}</p></div></div>
-                    <div class="w-full h-px bg-black/10"></div>
-                    <div class="flex gap-3 items-start"><i class="ph-fill ph-phone text-gray-400 text-xl mt-1"></i><div><p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Phone</p><p class="text-xl font-bold text-gray-900 leading-snug">${data.phone}</p></div></div>
-                </div>
-                <div class="flex gap-3 w-full">
-                    <a href="tel:7185095888" class="flex-1 bg-white/70 text-gray-900 h-14 rounded-xl font-semibold text-base flex items-center justify-center active-scale border border-white/50"><i class="ph-bold ph-phone mr-2"></i> ${data.btnCall}</a>
-                    <a href="https://maps.google.com/?q=136-78+Roosevelt+Ave,+Flushing,+NY+11354" target="_blank" class="flex-1 bg-blue-600 text-white h-14 rounded-xl font-semibold text-base flex items-center justify-center shadow-lg active-scale"><i class="ph-bold ph-arrow-bend-up-right mr-2"></i> ${data.btnNav}</a>
-                </div>`;
-        }
-
-        function setIphoneState(key, value) { iphoneConfig[key] = value; renderIphoneContent(); }
-        function openProduct(type) {
-            if (type === 'iphone') { iphoneConfig = { region: 'na', model: 'pro', storage: '256' }; renderIphoneContent(); }
-            else if (type === 'accessories') renderAccessoriesContent();
-            else if (type === 'plans') renderPlansContent();
-            else if (type === 'support') renderContactContent();
-            openSheet();
-        }
-        function openSheet() {
-            document.getElementById('productOverlay').classList.remove('pointer-events-none');
-            document.getElementById('dimmer').classList.remove('bg-black/0');
-            document.getElementById('dimmer').classList.add('bg-black/20', 'backdrop-blur-sm');
-            document.getElementById('bottomSheet').classList.remove('translate-y-full');
-        }
-        function closeSheet() {
-            document.getElementById('bottomSheet').classList.add('translate-y-full');
-            document.getElementById('dimmer').classList.remove('bg-black/20', 'backdrop-blur-sm');
-            document.getElementById('dimmer').classList.add('bg-black/0');
-            setTimeout(() => document.getElementById('productOverlay').classList.add('pointer-events-none'), 300);
-        }
-    </script>
+  <script type="module" src="/src/redirect.ts"></script>
 </body>
 </html>

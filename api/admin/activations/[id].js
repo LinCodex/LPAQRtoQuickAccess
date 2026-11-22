@@ -1,33 +1,16 @@
 // Vercel Serverless Function - Update/Delete activation
-const { createClient } = require('redis');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
-
-async function getRedisClient() {
-  const client = createClient({ url: process.env.REDIS_URL });
-  await client.connect();
-  return client;
-}
-
-function verifyToken(req) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) return null;
-  
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (e) {
-    return null;
-  }
-}
+const {
+  applyCors,
+  verifyToken,
+  validateId,
+  validateLpaCode,
+  validateStatus,
+  sanitizeField
+} = require('../../_lib/auth');
+const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../../_lib/redis');
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyCors(req, res, 'PUT,DELETE,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -39,69 +22,84 @@ module.exports = async function handler(req, res) {
   }
 
   const { id } = req.query;
+  if (!validateId(id)) {
+    return res.status(400).json({ error: 'Invalid activation ID' });
+  }
+
   let redis;
 
-  // PUT - Update activation
   if (req.method === 'PUT') {
-    const { phoneNumber, notes, status, lpaCode, shortUrl } = req.body || {};
+    const body = req.body || {};
+    const { phoneNumber, notes, status, lpaCode, shortUrl } = body;
+
+    if (lpaCode !== undefined && typeof lpaCode === 'string' && lpaCode.trim() && !validateLpaCode(lpaCode)) {
+      return res.status(400).json({ error: 'Invalid LPA code format' });
+    }
+
+    if (status !== undefined && !validateStatus(status)) {
+      return res.status(400).json({ error: 'Invalid activation status' });
+    }
 
     try {
       redis = await getRedisClient();
       const activationData = await redis.get(`activation:${id}`);
-      
+
       if (!activationData) {
-        await redis.disconnect();
+        await closeRedisClient(redis);
         return res.status(404).json({ error: 'Activation not found' });
       }
 
       const activation = JSON.parse(activationData);
 
-      // Update fields
       const updatedActivation = {
         ...activation,
-        phoneNumber: phoneNumber !== undefined ? phoneNumber : activation.phoneNumber,
-        notes: notes !== undefined ? notes : activation.notes,
-        lpaCode: lpaCode !== undefined ? lpaCode : activation.lpaCode,
-        shortUrl: shortUrl !== undefined ? shortUrl : activation.shortUrl,
+        phoneNumber: phoneNumber !== undefined ? sanitizeField(String(phoneNumber), 32) : activation.phoneNumber,
+        notes: notes !== undefined ? sanitizeField(String(notes), 500) : activation.notes,
+        lpaCode: lpaCode !== undefined ? (typeof lpaCode === 'string' ? lpaCode.trim() : '') : activation.lpaCode,
+        shortUrl: shortUrl !== undefined ? sanitizeField(String(shortUrl), 256) : activation.shortUrl,
         updatedAt: new Date().toISOString(),
         updatedBy: user.username
       };
 
-      // Update status if provided
       if (status !== undefined) {
         updatedActivation.status = status;
       }
 
       await redis.set(`activation:${id}`, JSON.stringify(updatedActivation));
-      await redis.disconnect();
+      await closeRedisClient(redis);
 
       return res.status(200).json(updatedActivation);
     } catch (error) {
       console.error('Error updating activation:', error);
-      if (redis) await redis.disconnect().catch(() => {});
+      await closeRedisClient(redis);
+      if (isRedisUnavailableError(error)) {
+        return res.status(503).json({ error: 'Database service unavailable' });
+      }
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  // DELETE - Delete activation
   if (req.method === 'DELETE') {
     try {
       redis = await getRedisClient();
       const activationData = await redis.get(`activation:${id}`);
-      
+
       if (!activationData) {
-        await redis.disconnect();
+        await closeRedisClient(redis);
         return res.status(404).json({ error: 'Activation not found' });
       }
 
       await redis.del(`activation:${id}`);
       await redis.sRem('activations', id);
-      await redis.disconnect();
+      await closeRedisClient(redis);
 
       return res.status(200).json({ message: 'Activation deleted' });
     } catch (error) {
       console.error('Error deleting activation:', error);
-      if (redis) await redis.disconnect().catch(() => {});
+      await closeRedisClient(redis);
+      if (isRedisUnavailableError(error)) {
+        return res.status(503).json({ error: 'Database service unavailable' });
+      }
       return res.status(500).json({ error: 'Internal server error' });
     }
   }

@@ -1,61 +1,44 @@
-# LPA QR to Link
+# EZRefill 椰子通讯 — Storefront & eSIM Quick Access
 
-A simple web app that converts eSIM LPA QR codes into shareable activation links.
+Storefront website, interactive 3D phone catalog, prepaid plan explorer, and eSIM LPA activation tools for **EZRefill** (136-78 Roosevelt Ave, Flushing, NY).
 
-## Features
+## Routes & Features
 
-- **QR Code Scanner**: Use your device camera to scan LPA QR codes
-- **Image Upload**: Upload QR code images for conversion
-- **Manual Input**: Paste LPA codes directly
-- **Link Generation**: Creates Apple eSIM setup URLs that work on iOS devices
-- **QR Code Output**: Generates a new QR code for the activation link
-- **Copy & Share**: Easy copy-to-clipboard functionality
+- `/` — Storefront landing page with scroll-driven product sequences, prepaid plan explorer (`config/store.json`), AirPods 4 showcase, and store essentials.
+- `/phones` — New iPhone collection with multi-angle hover previews and an interactive Three.js 3D viewer modal.
+- `/accessories/` & `/accessories/airpods/` — Chargers, cables, $5 screen protectors, and AirPods 4 details.
+- `/lpascan` — eSIM LPA QR scanner (camera, image upload, screen cutout, or manual/pasted LPA entry) generating both iOS Quick Links (`/redirect?url=...`) and raw `LPA:1$...` QR codes for Android and camera scanning.
+- `/redirect` & `/activate` & `/s/:id` — Customer-facing one-tap eSIM activation pages with bilingual (`EN` / `中文`) support.
+- `/admin` — Cookie-authenticated activation console backed by Vercel serverless functions (`api/`) and Redis.
+- `/privacy/` & `/store-information/` — Plain-language privacy and store policies.
+- `/viewer.html` *(dev-only)* — Local GLB model inspection tool served against `dev-assets/` during `npm run dev` (excluded from production builds).
 
-## LPA Code Format
-
-LPA (Local Profile Assistant) codes follow this format:
-```
-LPA:1$<SM-DP+ Address>$<Activation Code>$<Confirmation Code (optional)>
-```
-
-Example:
-```
-LPA:1$smdp.example.com$K2-ABC123-DEF456
-```
-
-## How It Works
-
-1. Scan or enter an LPA QR code
-2. The app parses the LPA data
-3. Generates an Apple eSIM setup URL
-4. Creates a shareable QR code
-
-## Usage
-
-### For iOS Users
-- Click the generated link to automatically open eSIM setup
-- Or scan the generated QR code
-
-### For Android Users
-- Go to Settings → Network → eSIM
-- Scan the generated QR code
-
-## Getting Started
+## Local Development & Preview
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
-npm start
-
-# Build for production
-npm run build
+npm run dev          # Starts Vite dev server (includes /models and /decoders from dev-assets/)
+npx tsc --noEmit     # Type-check all TypeScript sources
+npm run build        # Outputs production bundle to build/
+npx vite preview --port 4173 --host 127.0.0.1
 ```
 
-## Tech Stack
+To run the local Express API server alongside the frontend:
 
-- React 18
-- html5-qrcode (QR scanning)
-- qrcode (QR generation)
-- Lucide React (icons)
+```bash
+cd server && npm install
+JWT_SECRET=your-local-secret ADMIN_BOOTSTRAP_PASSWORD=your-local-pass npm start
+```
+
+## Production Environment Variables (Vercel)
+
+Configure these environment variables before deploying:
+
+| Variable | Purpose |
+| --- | --- |
+| `REDIS_URL` | Redis connection string for activations, users, rate limiting, and short links |
+| `JWT_SECRET` | Random 32+ character secret used to sign admin session cookies (`__Host-ezrefill_session`) |
+| `ADMIN_BOOTSTRAP_PASSWORD` | Initial password (8+ chars) used only when `user:admin` does not yet exist in Redis |
+| `ADMIN_RESET_TOKEN` | Secret token required by `POST /api/auth/reset-password` |
+| `PUBLIC_BASE_URL` | Canonical public site URL (e.g. `https://ezrefillny.net`) for short links and CORS |
+| `ALLOWED_ORIGINS` | Optional comma-separated list of additional allowed CORS origins |

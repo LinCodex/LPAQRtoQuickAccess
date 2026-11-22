@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZRefill">
+  <title>Short Link — EZRefill 椰子通讯</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/utility.css">
+  <script src="/lang-init.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header compact-header">
+    <a class="brand" href="/" aria-label="EZRefill home">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+    <div class="header-actions">
+      <button class="language-toggle" aria-label="切换为中文">中文</button>
+    </div>
+  </header>
+
+  <main id="main" class="utility-page">
+    <div class="utility-shell">
+      <div class="utility-header">
+        <p class="eyebrow">EZREFILL / QUICK ACCESS</p>
+        <h1>eSIM Activation</h1>
+      </div>
+
+      <section class="utility-card esim-status-box" aria-label="Short link activation">
+        <div id="shortlink-loading">
+          <p class="esim-desc">Loading short link…</p>
+        </div>
+
+        <div id="shortlink-redirect" hidden style="width:100%;">
+          <p class="esim-desc" style="margin:0 auto 16px;">Redirecting to eSIM setup…</p>
+          <a id="manual-link" href="#" class="lpa-primary-btn">Tap here if not redirected</a>
+        </div>
+
+        <div id="shortlink-error" hidden style="width:100%;">
+          <div class="lpa-alert is-error" role="alert" style="margin-top:0;">
+            <strong style="display:block;margin-bottom:4px;">Link Not Found</strong>
+            <span id="shortlink-error-message">This link may have expired or is invalid.</span>
+          </div>
+          <a href="/" class="lpa-secondary-btn">Back to EZRefill</a>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      <a class="brand" href="/">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
+      <span>© <span data-year>2026</span> EZRefill</span>
+      <div class="footer-links">
+        <a href="/privacy/">Privacy</a>
+        <a href="/store-information/">Store information</a>
+      </div>
+    </footer>
+  </main>
+
+  <script type="module" src="/src/shortlink.ts"></script>
+</body>
+</html>

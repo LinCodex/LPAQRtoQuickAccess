@@ -1,34 +1,10 @@
 // Vercel Serverless Function - Change Password
-const { createClient } = require('redis');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'ezrefill-secret-key-change-in-production';
-
-async function getRedisClient() {
-  const client = createClient({ url: process.env.REDIS_URL });
-  await client.connect();
-  return client;
-}
-
-function verifyToken(req) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return null;
-
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch (e) {
-    return null;
-  }
-}
+const { applyCors, verifyToken } = require('../_lib/auth');
+const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -47,48 +23,46 @@ module.exports = async function handler(req, res) {
   try {
     const { currentPassword, newPassword } = req.body || {};
 
-    if (!currentPassword || !newPassword) {
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword || !newPassword) {
       return res.status(400).json({ error: 'Current and new password required' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
     }
 
     redis = await getRedisClient();
 
-    // Get user from Redis
     const userData = await redis.get(`user:${user.username}`);
-
     if (!userData) {
-      // User doesn't exist in Redis yet (first time after default login)
-      // Verify current password is the default
-      if (currentPassword !== 'Aa13678!') {
-        await redis.disconnect();
-        return res.status(401).json({ error: 'Current password is incorrect' });
-      }
-    } else {
-      const existingUser = JSON.parse(userData);
-      if (!bcrypt.compareSync(currentPassword, existingUser.password)) {
-        await redis.disconnect();
-        return res.status(401).json({ error: 'Current password is incorrect' });
-      }
+      await closeRedisClient(redis);
+      return res.status(404).json({ error: 'User record not found' });
     }
 
-    // Hash new password and save
+    const existingUser = JSON.parse(userData);
+    if (!bcrypt.compareSync(currentPassword, existingUser.password)) {
+      await closeRedisClient(redis);
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
     const hashedPassword = bcrypt.hashSync(newPassword, 10);
     await redis.set(`user:${user.username}`, JSON.stringify({
+      ...existingUser,
       id: user.id,
       username: user.username,
       password: hashedPassword,
+      passwordSetByUser: true,
       updatedAt: new Date().toISOString()
     }));
 
-    await redis.disconnect();
+    await closeRedisClient(redis);
     return res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
-    if (redis) await redis.disconnect().catch(() => { });
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+    await closeRedisClient(redis);
+    if (isRedisUnavailableError(error)) {
+      return res.status(503).json({ error: 'Database service unavailable' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };

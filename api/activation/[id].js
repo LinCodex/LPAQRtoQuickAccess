@@ -1,17 +1,9 @@
 // Vercel Serverless Function - Get activation status (public)
-const { createClient } = require('redis');
-
-async function getRedisClient() {
-  const client = createClient({ url: process.env.REDIS_URL });
-  await client.connect();
-  return client;
-}
+const { applyCors, validateId, validateLpaCode } = require('../_lib/auth');
+const { getRedisClient, closeRedisClient, isRedisUnavailableError } = require('../_lib/redis');
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  applyCors(req, res, 'GET,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -22,30 +14,34 @@ module.exports = async function handler(req, res) {
   }
 
   const { id } = req.query;
+  if (!validateId(id)) {
+    return res.status(400).json({ error: 'Invalid activation ID' });
+  }
+
   let redis;
 
   try {
     redis = await getRedisClient();
     const activationData = await redis.get(`activation:${id}`);
-    await redis.disconnect();
-    
+    await closeRedisClient(redis);
+    redis = null;
+
     if (!activationData) {
       return res.status(404).json({ error: 'Activation not found' });
     }
 
     const activation = JSON.parse(activationData);
 
-    // Mask phone number for public display
-    const maskedPhone = activation.phoneNumber 
+    const maskedPhone = activation.phoneNumber
       ? activation.phoneNumber.slice(0, -4).replace(/./g, '*') + activation.phoneNumber.slice(-4)
       : null;
 
-    // Generate activation URL if active
     let activationUrl = null;
-    if (activation.status === 'active' && activation.lpaCode) {
-      activationUrl = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(activation.lpaCode)}`;
+    if (activation.status === 'active' && activation.lpaCode && validateLpaCode(activation.lpaCode)) {
+      activationUrl = `https://esimsetup.apple.com/esim_qrcode_provisioning?carddata=${encodeURIComponent(activation.lpaCode.trim())}`;
     }
 
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({
       id: activation.id,
       status: activation.status,
@@ -57,7 +53,10 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error fetching activation:', error);
-    if (redis) await redis.disconnect().catch(() => {});
+    await closeRedisClient(redis);
+    if (isRedisUnavailableError(error)) {
+      return res.status(503).json({ error: 'Database service unavailable' });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 };

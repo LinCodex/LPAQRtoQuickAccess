@@ -30,12 +30,15 @@ npm start
 
 The server runs on port 3001 by default.
 
-### 3. Default Login
+### 3. Environment Configuration & Bootstrap Admin
 
-- **Username**: `admin`
-- **Password**: `Aa13678!`
+Configure these environment variables before starting the local server:
 
-⚠️ **Change the password after first login!**
+- `JWT_SECRET`: Optional 32+ char secret (if omitted locally, an auto-generated key is persisted to `server/data/.jwt-secret`)
+- `ADMIN_BOOTSTRAP_PASSWORD`: Initial admin password (minimum 8 characters) used only until `admin` updates their password
+- `ADMIN_RESET_TOKEN`: Secret token required by `POST /api/auth/reset-password`
+
+⚠️ **Change the initial bootstrap password after first login!**
 
 ## Usage
 
@@ -115,7 +118,7 @@ JWT_SECRET=your-secure-secret-key PORT=3001 npm start
 ## Customer URL Format
 
 ```
-https://yourdomain.com/activate.html?id=abc12345
+https://ezrefillny.net/activate?id=abc12345
 ```
 
 The `id` is a short unique identifier generated for each activation.

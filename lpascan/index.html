@@ -1,32 +1,41 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
-  <meta name="color-scheme" content="light dark">
   <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#fafafa">
-  <meta name="description" content="eSIM Quick Access & LPA QR Scanner at EZRefill. Scan or enter eSIM activation QR codes directly for instant setup.">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EZRefill">
+  <meta name="description" content="eSIM Quick Access &amp; LPA QR Scanner at EZRefill in Flushing. Convert eSIM LPA codes into one-tap iOS setup links and scannable Android/iOS QR codes.">
+  <link rel="canonical" href="https://ezrefillny.net/lpascan">
+  <meta property="og:title" content="eSIM Quick Access — EZRefill 椰子通讯">
+  <meta property="og:description" content="Scan, upload, or enter an LPA eSIM code to generate a one-tap iOS link and shareable QR code.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ezrefillny.net/lpascan">
+  <meta property="og:image" content="https://ezrefillny.net/stills/connectivity-front.webp">
+  <meta name="twitter:card" content="summary_large_image">
   <title>eSIM Quick Access — EZRefill 椰子通讯</title>
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/src/style.css">
-  <link rel="stylesheet" href="/src/glass.css">
-  <link rel="stylesheet" href="/src/lpascan.css">
-  <script>
-    try {
-      const l = localStorage.getItem("ezrefill-language");
-      document.documentElement.lang = l === "en" || l === "zh-Hans" ? l : ((navigator.languages?.[0] || navigator.language || "").toLowerCase().startsWith("zh") ? "zh-Hans" : "en");
-    } catch {
-      document.documentElement.lang = (navigator.language || "").toLowerCase().startsWith("zh") ? "zh-Hans" : "en";
-    }
-  </script>
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/utility.css">
+  <script src="/lang-init.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <a class="brand" href="/" aria-label="EZRefill home">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
-    <nav aria-label="Main navigation">
-      <a href="/phones.html">Phones</a>
-      <a href="/#connectivity">Plans</a>
+    <nav aria-label="Primary">
+      <a href="/store">Store</a>
+      <a href="/phones">Phones</a>
+      <a href="/store#connectivity">Plans</a>
       <a href="/accessories/airpods/">AirPods</a>
       <a href="/accessories/">Essentials</a>
     </nav>
@@ -34,108 +43,178 @@
       <button class="language-toggle" aria-label="切换为中文">中文</button>
       <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu"><span></span><span></span></button>
     </div>
-    <nav id="mobile-menu" class="glass" aria-label="Mobile navigation" hidden>
-      <a href="/phones.html">Phones</a>
-      <a href="/#connectivity">Plans</a>
+    <nav id="mobile-menu" class="glass" aria-label="Mobile" hidden>
+      <a href="/store">Store</a>
+      <a href="/phones">Phones</a>
+      <a href="/store#connectivity">Plans</a>
       <a href="/accessories/airpods/">AirPods</a>
       <a href="/accessories/">Essentials</a>
-      <a href="/#contact">Visit the store ↗</a>
+      <a href="#contact">Visit the store ↗</a>
     </nav>
   </header>
 
-  <main id="main" class="lpa-page">
-    <div class="lpa-header">
-      <p class="eyebrow">EZREFILL / QUICK ACCESS</p>
-      <h1>eSIM Scanner</h1>
-      <p>Scan or enter an LPA QR code for one-tap eSIM installation.</p>
-    </div>
-
-    <!-- Scanner & Input Card -->
-    <div class="lpa-card">
-      <h2>Scan LPA Code</h2>
-
-      <div class="lpa-scanner-container">
-        <div id="lpa-qr-reader"></div>
-        <div id="scanner-status" class="scanner-status-box" hidden>Starting camera...</div>
-        <button id="scanner-retry-btn" class="lpa-action-btn" style="position:absolute;z-index:3;" hidden>Retry Camera</button>
-        <span class="scanner-overlay-hint">Point camera at eSIM QR code</span>
-      </div>
-
-      <div class="lpa-action-row">
-        <label class="lpa-action-btn" style="margin:0;">
-          <span>📷 Upload QR Image</span>
-          <input type="file" id="qr-file-input" accept="image/*" style="display:none;">
-        </label>
-        <button id="screen-cutout-btn" class="lpa-action-btn" type="button">
-          <span>🖥️ Screen Cutout</span>
-        </button>
-      </div>
-
-      <div class="lpa-divider"><span>or enter manually</span></div>
-
-      <div class="lpa-input-group">
-        <label for="manual-smdp">SM-DP+ Address</label>
-        <input type="text" id="manual-smdp" class="lpa-input" placeholder="e.g. t-mobile.idemia.io">
-      </div>
-
-      <div class="lpa-input-group">
-        <label for="manual-code">Activation Code</label>
-        <input type="text" id="manual-code" class="lpa-input" placeholder="e.g. G0LFC-8Z7IK-HYBGV-6CLG1">
-      </div>
-
-      <button id="manual-generate-btn" class="lpa-primary-btn" type="button">Generate Link ↗</button>
-
-      <div id="scan-error-box" class="error-message" style="margin-top:14px;background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:0.75rem;padding:10px 14px;font-size:0.85rem;" hidden></div>
-    </div>
-
-    <!-- Result Card -->
-    <div id="lpa-result-section" class="lpa-card lpa-result" hidden>
-      <h2>Generated eSIM Link</h2>
-
-      <div class="lpa-verify-badge">
-        <div class="lpa-verify-badge-header">✓ Verified eSIM Profile</div>
-        <div class="lpa-verify-item">
-          <span class="lpa-verify-label">SM-DP+ Server</span>
-          <div id="verify-smdp" class="lpa-verify-value"></div>
-        </div>
-        <div class="lpa-verify-item">
-          <span class="lpa-verify-label">Activation Code</span>
-          <div id="verify-code" class="lpa-verify-value"></div>
-        </div>
-        <div id="verify-confirm-row" class="lpa-verify-item" hidden>
-          <span class="lpa-verify-label">Confirmation Code</span>
-          <div id="verify-confirm" class="lpa-verify-value"></div>
+  <main id="main" class="utility-page">
+    <div class="utility-shell">
+      <div class="utility-header">
+        <p class="eyebrow">EZREFILL / QUICK ACCESS</p>
+        <h1>eSIM Scanner</h1>
+        <p>Scan or enter an LPA QR code for one-tap eSIM installation.</p>
+        <div class="lpa-header-actions">
+          <a class="lpa-manage-btn" href="/admin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+              <line x1="7" y1="9" x2="17" y2="9"/>
+              <line x1="7" y1="14" x2="13" y2="14"/>
+            </svg>
+            <span>Manage Activations</span>
+            <span aria-hidden="true">↗</span>
+          </a>
         </div>
       </div>
 
-      <div class="lpa-link-box">
-        <span class="lpa-verify-label">Direct Link</span>
-        <code id="generated-link-code" class="lpa-link-code"></code>
-      </div>
+      <section class="utility-card" aria-labelledby="scan-card-title">
+        <h2 id="scan-card-title">Scan LPA Code</h2>
 
-      <div class="lpa-button-grid">
-        <button id="copy-link-btn" class="lpa-action-btn" type="button">Copy Link</button>
-        <a id="wechat-share-btn" href="weixin://" class="lpa-action-btn lpa-wechat-btn">Share to WeChat</a>
-      </div>
+        <div id="mobile-camera-section" class="lpa-camera-section">
+          <div class="lpa-scanner-container">
+            <div id="lpa-qr-reader"></div>
+            <div id="scanner-overlay-state" class="scanner-overlay-state">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+              <p id="scanner-status" class="scanner-status-text">Point camera at an eSIM QR code or tap Start Camera.</p>
+              <button id="scanner-start-btn" class="lpa-action-btn on-dark" type="button">Start Camera</button>
+            </div>
+          </div>
 
-      <div class="lpa-qr-display">
-        <p style="font-size:0.8rem;color:var(--text-muted,#666);margin-bottom:10px;">Scan from iPhone camera to install:</p>
-        <canvas id="qr-code-canvas"></canvas>
-      </div>
+          <div id="scanner-stop-bar" class="scanner-stop-bar" hidden>
+            <button id="scanner-stop-btn" class="lpa-action-btn" type="button">Stop Camera</button>
+          </div>
+        </div>
 
-      <div class="lpa-instructions">
-        <h3>How to activate:</h3>
-        <ol>
-          <li><strong>iOS 17.4+:</strong> Open the link directly or share via WeChat to activate one-tap setup.</li>
-          <li><strong>Other device:</strong> Point another iPhone camera at the QR code above to trigger eSIM installation.</li>
-        </ol>
-      </div>
+        <div id="lpa-action-row" class="lpa-action-row">
+          <label class="lpa-action-btn lpa-file-label">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Upload QR Image</span>
+            <input type="file" id="qr-file-input" accept="image/*" class="sr-only">
+          </label>
+          <button id="screen-cutout-btn" class="lpa-action-btn" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <span>Screen Cutout</span>
+          </button>
+        </div>
 
-      <button id="reset-scan-btn" class="lpa-secondary-btn" type="button">↺ Scan Another Code</button>
+        <div class="lpa-divider"><span>or enter manually</span></div>
+
+        <form id="manual-lpa-form" novalidate>
+          <div class="lpa-input-group">
+            <label for="manual-smdp">SM-DP+ Address</label>
+            <input type="text" id="manual-smdp" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="e.g. t-mobile.idemia.io or paste full LPA:1$...">
+          </div>
+
+          <div class="lpa-input-group">
+            <label for="manual-code">Activation Code</label>
+            <input type="text" id="manual-code" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="e.g. G0LFC-8Z7IK-HYBGV-6CLG1">
+          </div>
+
+          <div class="lpa-input-group">
+            <label for="manual-confirm">Confirmation Code (optional)</label>
+            <input type="text" id="manual-confirm" class="lpa-input" autocomplete="off" spellcheck="false" placeholder="e.g. 1234">
+          </div>
+
+          <div class="lpa-input-group">
+            <label for="manual-phone">Phone Number (optional)</label>
+            <input type="tel" id="manual-phone" class="lpa-input" autocomplete="tel" placeholder="e.g. (718) 555-0123">
+          </div>
+
+          <button id="manual-generate-btn" class="lpa-primary-btn" type="submit">Generate Link ↗</button>
+        </form>
+
+        <div id="scan-error-box" class="lpa-alert is-error" role="alert" hidden></div>
+      </section>
+
+      <section id="lpa-result-section" class="utility-card" aria-labelledby="result-card-title" hidden>
+        <h2 id="result-card-title">Generated eSIM Link</h2>
+
+        <div class="lpa-verify-badge">
+          <div class="lpa-verify-badge-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>Verified eSIM Profile</span>
+          </div>
+          <div class="lpa-verify-item">
+            <span class="lpa-verify-label">SM-DP+ Server</span>
+            <div id="verify-smdp" class="lpa-verify-value"></div>
+          </div>
+          <div class="lpa-verify-item">
+            <span class="lpa-verify-label">Activation Code</span>
+            <div id="verify-code" class="lpa-verify-value"></div>
+          </div>
+          <div id="verify-confirm-row" class="lpa-verify-item" hidden>
+            <span class="lpa-verify-label">Confirmation Code</span>
+            <div id="verify-confirm" class="lpa-verify-value"></div>
+          </div>
+          <div id="verify-phone-row" class="lpa-verify-item" hidden>
+            <span class="lpa-verify-label">Phone Number</span>
+            <div id="verify-phone" class="lpa-verify-value"></div>
+          </div>
+        </div>
+
+        <div class="lpa-link-box">
+          <span class="lpa-verify-label">Direct Link</span>
+          <code id="generated-link-code" class="lpa-link-code"></code>
+        </div>
+
+        <div class="lpa-button-grid">
+          <button id="copy-link-btn" class="lpa-action-btn is-primary" type="button">Copy Link</button>
+          <a id="wechat-share-btn" href="weixin://" class="lpa-action-btn lpa-wechat-btn">Share to WeChat</a>
+        </div>
+
+        <p id="lpa-toast" class="lpa-toast" role="status" hidden></p>
+
+        <div class="lpa-qr-mode" role="group" aria-label="QR Mode">
+          <button type="button" data-qr-mode="redirect" aria-pressed="true">iOS Quick Link</button>
+          <button type="button" data-qr-mode="raw" aria-pressed="false">Direct LPA (Android / Camera)</button>
+        </div>
+
+        <div class="lpa-qr-display">
+          <p id="qr-caption">Scan from iPhone camera to install:</p>
+          <canvas id="qr-code-canvas"></canvas>
+          <div class="lpa-qr-actions">
+            <button id="copy-qr-btn" class="lpa-action-btn lpa-qr-copy-btn" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span>Copy QR Image</span>
+            </button>
+          </div>
+          <p id="qr-copy-status" class="lpa-qr-status" role="status"></p>
+        </div>
+
+        <div class="lpa-instructions">
+          <h3>How to activate</h3>
+          <ol>
+            <li>iOS 17.4+ quick link: copy or share the iOS Quick Link via WeChat, or scan the iOS Quick Link QR code with the iPhone camera.</li>
+            <li>Android or another phone: switch QR Mode to Direct LPA and scan from system eSIM settings.</li>
+          </ol>
+        </div>
+
+        <button id="reset-scan-btn" class="lpa-secondary-btn" type="button">Scan Another Code</button>
+      </section>
     </div>
 
-    <!-- Store Contact / Directions -->
-    <section class="contact content" id="contact" aria-labelledby="contact-title" style="margin-top:40px;">
+    <section class="contact content" id="contact" aria-labelledby="contact-title">
       <div class="contact-heading">
         <p class="eyebrow">GOOD CONNECTIONS. RIGHT AROUND THE CORNER.</p>
         <h2 id="contact-title">See you on<br><em>Roosevelt.</em></h2>
@@ -167,7 +246,6 @@
     </footer>
   </main>
 
-  <script type="module" src="/src/site.ts"></script>
   <script type="module" src="/src/lpascan.ts"></script>
 </body>
 </html>
