@@ -125,6 +125,8 @@ export default async function handler(req, res) {
           activationCode: parts.activationCode,
           confirmationCode: parts.confirmationCode,
           phoneNumber: phoneNumber || primary.phoneNumber || '',
+          activated: Boolean(primary.activated),
+          activatedAt: primary.activated ? (primary.activatedAt || null) : null,
           updatedAt: new Date().toISOString()
         };
 
@@ -150,6 +152,8 @@ export default async function handler(req, res) {
         activationCode: parts.activationCode,
         confirmationCode: parts.confirmationCode,
         phoneNumber,
+        activated: false,
+        activatedAt: null,
         createdAt: new Date().toISOString(),
         createdBy: user.username
       };

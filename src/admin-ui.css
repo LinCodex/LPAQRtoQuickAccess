@@ -451,7 +451,7 @@
 }
 
 .admin-table.is-history {
-  min-width: 760px;
+  min-width: 860px;
 }
 
 .admin-table thead {
@@ -484,10 +484,10 @@
 .admin-table:not(.is-history) thead th:nth-child(4) { width: 15%; }
 .admin-table:not(.is-history) thead th:nth-child(5) { width: 29%; }
 
-.admin-table.is-history thead th:nth-child(1) { width: 18%; }
-.admin-table.is-history thead th:nth-child(2) { width: 16%; }
-.admin-table.is-history thead th:nth-child(3) { width: 26%; }
-.admin-table.is-history thead th:nth-child(4) { width: 40%; }
+.admin-table.is-history thead th:nth-child(1) { width: 15%; }
+.admin-table.is-history thead th:nth-child(2) { width: 14%; }
+.admin-table.is-history thead th:nth-child(3) { width: 23%; }
+.admin-table.is-history thead th:nth-child(4) { width: 48%; }
 
 .admin-table td,
 .admin-table tbody th {
@@ -753,6 +753,34 @@
   color: var(--err-fg);
 }
 
+.admin-table.is-history tbody tr.is-history-activated,
+.admin-table.is-history tbody tr.is-history-activated th,
+.admin-table.is-history tbody tr.is-history-activated td {
+  background: color-mix(in srgb, var(--ok-bg) 52%, var(--surface));
+}
+
+.history-activated-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ok-line);
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.icon-btn.history-activate-btn.is-activated {
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+  color: var(--ok-fg);
+}
+
 @container (width >= 680px) and (width < 940px) {
   .admin-table thead th,
   .admin-table tbody th,
@@ -869,10 +897,28 @@
 
   .admin-history-dt {
     flex-direction: row;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px 8px;
     width: 100%;
+  }
+
+  .admin-history-dt .history-activated-badge {
+    margin-top: 0;
+  }
+
+  .admin-table.is-history tbody tr.is-history-activated {
+    border-color: var(--ok-line);
+    background: color-mix(in srgb, var(--ok-bg) 42%, var(--surface));
+  }
+
+  .admin-table.is-history tbody tr.is-history-activated th {
+    background: color-mix(in srgb, var(--ok-bg) 62%, var(--surface-soft));
+  }
+
+  .admin-table.is-history tbody tr.is-history-activated td {
+    background: transparent;
   }
 
   .admin-table td {
@@ -953,6 +999,11 @@
     justify-content: flex-start;
     flex-wrap: nowrap;
     gap: 5px;
+  }
+
+  .admin-table.is-history .admin-row-actions {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .admin-row-actions .icon-btn.is-compact-pill {

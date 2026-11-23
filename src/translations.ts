@@ -758,7 +758,15 @@ export const zh: Record<string, string> = {
   'Storage already within limits.': '当前存储占用正常，无需清理。',
   'Storage cleanup failed.': '存储清理没成功。',
   'Network error while running storage cleanup.': '执行存储清理时网络出错。',
-  '· Last run:': '· 上次清理：'
+  '· Last run:': '· 上次清理：',
+  'Mark Activated': '标记已激活',
+  'Activated': '已激活',
+  'Mark eSIM as activated': '标记此 eSIM 为已激活',
+  'Mark as not activated': '取消已激活标记',
+  'Marked as activated.': '已标记为已激活。',
+  'Marked as not activated.': '已取消已激活标记。',
+  'Could not update activation status.': '没能更新激活状态。',
+  'Network error while updating activation status.': '更新激活状态时网络出错。'
 };
 
 export function translate(value: string): string {

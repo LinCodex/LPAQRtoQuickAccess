@@ -1,7 +1,6 @@
 import './site';
 import { getLanguage } from './site';
 import { translate } from './translations';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import QRCode from 'qrcode';
 import {
   encodePhoneParam,
@@ -11,6 +10,7 @@ import {
   sanitizePhoneNumber,
   type LpaData
 } from './lpa-utils';
+import { FastQrCameraScanner, decodeQrFromFile } from './qr-scanner-engine';
 
 interface ActivationRecord {
   id: string;
@@ -30,6 +30,9 @@ interface HistoryRecord {
   activationCode: string;
   confirmationCode?: string;
   phoneNumber?: string;
+  activated?: boolean;
+  activatedAt?: string | null;
+  updatedAt?: string;
   createdAt: string;
   createdBy?: string;
 }
@@ -121,7 +124,7 @@ const loginError = document.getElementById('login-error')!;
 
 // Dashboard Overview, Tabs & Feedback
 const userDisplay = document.getElementById('user-display')!;
-const refreshStatus = document.getElementById('refresh-status')!;
+const refreshPills = [...document.querySelectorAll<HTMLElement>('[data-refresh-pill]')];
 const dashboardToast = document.getElementById('dashboard-toast')!;
 const dashboardError = document.getElementById('dashboard-error')!;
 const activationsTable = document.getElementById('activations-table') as HTMLTableElement;
@@ -276,14 +279,17 @@ let statusFilter: 'all' | 'standby' | 'processing' | 'active' = 'all';
 let searchQuery = '';
 let deleteTargetId: string | null = null;
 let lastDataHash = '';
+let lastHistoryHash = '';
 let countdownInterval = 0;
 let refreshCountdown = 5;
+let autoRefreshTicks = 0;
+let autoRefreshInFlight = false;
 let toastTimer = 0;
 
-let modalScanner: Html5Qrcode | null = null;
+let modalScanner: FastQrCameraScanner | null = null;
 let modalScannerActive = false;
 
-let qlScanner: Html5Qrcode | null = null;
+let qlScanner: FastQrCameraScanner | null = null;
 let qlScannerActive = false;
 let qlScannerPaused = false;
 let qlScannerStarting = false;
@@ -498,7 +504,8 @@ const ICON_PATHS = {
     'M14 21h2'
   ],
   load: ['M9 14L4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 0 11H11'],
-  preview: ['M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6', 'M15 3h6v6', 'M10 14L21 3']
+  preview: ['M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6', 'M15 3h6v6', 'M10 14L21 3'],
+  check: ['M20 6L9 17l-5-5']
 } as const;
 
 function createSvgIcon(paths: readonly string[], size = 16): SVGSVGElement {
@@ -840,6 +847,32 @@ function renderActivations() {
   }
 }
 
+function setRefreshPillText(text: string) {
+  for (const pill of refreshPills) {
+    pill.textContent = text;
+  }
+}
+
+async function runAutoRefreshCycle() {
+  if (dashboard.hidden || document.hidden || autoRefreshInFlight) return;
+  autoRefreshInFlight = true;
+  autoRefreshTicks += 1;
+  setRefreshPillText('Checking…');
+  try {
+    const shouldRefreshStatus =
+      tabStatus.getAttribute('aria-selected') === 'true' || autoRefreshTicks % 6 === 0;
+    await Promise.allSettled([
+      loadActivations(true),
+      loadHistory(true),
+      shouldRefreshStatus ? loadSystemStatus(true) : Promise.resolve()
+    ]);
+  } finally {
+    autoRefreshInFlight = false;
+    refreshCountdown = 5;
+    setRefreshPillText(`Auto-refresh: ${refreshCountdown}s`);
+  }
+}
+
 function stopAutoRefresh() {
   if (countdownInterval) {
     clearInterval(countdownInterval);
@@ -850,19 +883,15 @@ function stopAutoRefresh() {
 function startAutoRefresh() {
   stopAutoRefresh();
   refreshCountdown = 5;
-  refreshStatus.textContent = `Auto-refresh: ${refreshCountdown}s`;
+  setRefreshPillText(`Auto-refresh: ${refreshCountdown}s`);
 
   countdownInterval = window.setInterval(() => {
-    if (document.hidden || dashboard.hidden) return;
+    if (document.hidden || dashboard.hidden || autoRefreshInFlight) return;
     refreshCountdown--;
     if (refreshCountdown <= 0) {
-      refreshStatus.textContent = 'Checking…';
-      void loadActivations(true).finally(() => {
-        refreshCountdown = 5;
-        refreshStatus.textContent = `Auto-refresh: ${refreshCountdown}s`;
-      });
+      void runAutoRefreshCycle();
     } else {
-      refreshStatus.textContent = `Auto-refresh: ${refreshCountdown}s`;
+      setRefreshPillText(`Auto-refresh: ${refreshCountdown}s`);
     }
   }, 1000);
 }
@@ -965,6 +994,9 @@ function showDashboard(username: string) {
   restoreSavedWorkspacePrefs();
   selectWorkspaceTab(getSavedWorkspaceTab(), false, { scroll: false, persist: false });
   syncTableHeaderVars();
+  lastDataHash = '';
+  lastHistoryHash = '';
+  autoRefreshTicks = 0;
   void loadActivations().then(() => startAutoRefresh());
   void loadHistory();
   void loadSystemStatus(true);
@@ -1023,6 +1055,10 @@ function renderHistory() {
 
   for (const h of rows) {
     const tr = document.createElement('tr');
+    const isActivated = Boolean(h.activated);
+    if (isActivated) {
+      tr.classList.add('is-history-activated');
+    }
     const lpaObj: LpaData = {
       smdpAddress: h.smdpAddress,
       activationCode: h.activationCode,
@@ -1045,6 +1081,15 @@ function renderHistory() {
     timeSpan.setAttribute('data-no-translate', '');
     timeSpan.textContent = time;
     dtDiv.append(dateSpan, timeSpan);
+    if (isActivated) {
+      const activatedBadge = document.createElement('span');
+      activatedBadge.className = 'history-activated-badge';
+      activatedBadge.textContent = 'Activated';
+      if (h.activatedAt) {
+        activatedBadge.title = formatDate(h.activatedAt, true);
+      }
+      dtDiv.append(activatedBadge);
+    }
     dtTh.append(dtDiv);
 
     const phoneTd = document.createElement('td');
@@ -1074,6 +1119,20 @@ function renderHistory() {
     const actionsTd = document.createElement('td');
     const actionsWrap = document.createElement('div');
     actionsWrap.className = 'admin-row-actions';
+
+    const activateBtn = document.createElement('button');
+    activateBtn.type = 'button';
+    activateBtn.className = `icon-btn is-compact-pill history-activate-btn${isActivated ? ' is-activated' : ''}`;
+    activateBtn.setAttribute('aria-pressed', String(isActivated));
+    const activateTooltip = isActivated ? t('Mark as not activated') : t('Mark eSIM as activated');
+    activateBtn.title = activateTooltip;
+    activateBtn.setAttribute('aria-label', `${activateTooltip} ${h.id}`);
+    const activateLabel = document.createElement('span');
+    activateLabel.textContent = isActivated ? 'Activated' : 'Mark Activated';
+    activateBtn.append(createSvgIcon(ICON_PATHS.check, 14), activateLabel);
+    activateBtn.addEventListener('click', () => {
+      void toggleHistoryActivated(h.id, !isActivated, activateBtn);
+    });
 
     const copyBtn = document.createElement('button');
     copyBtn.type = 'button';
@@ -1132,7 +1191,7 @@ function renderHistory() {
     delBtn.append(createSvgIcon(ICON_PATHS.trash));
     delBtn.addEventListener('click', () => void deleteHistoryEntry(h.id));
 
-    actionsWrap.append(copyBtn, copyQrBtn, loadBtn, previewA, delBtn);
+    actionsWrap.append(activateBtn, copyBtn, copyQrBtn, loadBtn, previewA, delBtn);
     actionsTd.append(actionsWrap);
 
     tr.append(dtTh, phoneTd, esimTd, actionsTd);
@@ -1514,7 +1573,7 @@ function renderSystemStatus(data: SystemStatusResponse) {
 async function loadSystemStatus(silent = false) {
   if (statusLoading) return;
   statusLoading = true;
-  if (statusRefreshBtn) {
+  if (!silent && statusRefreshBtn) {
     statusRefreshBtn.disabled = true;
     statusRefreshBtn.textContent = 'Refreshing…';
   }
@@ -1557,19 +1616,29 @@ async function loadSystemStatus(silent = false) {
     }
   } finally {
     statusLoading = false;
-    if (statusRefreshBtn) {
+    if (!silent && statusRefreshBtn) {
       statusRefreshBtn.disabled = false;
       statusRefreshBtn.textContent = 'Refresh Status';
     }
   }
 }
 
-async function loadHistory() {
+async function loadHistory(silent = false) {
   try {
     const res = await apiFetch('/admin/history');
+    if (res.status === 401 || res.status === 403) {
+      clearStoredToken();
+      showLogin();
+      return;
+    }
     if (!res.ok) return;
-    historyEntries = (await res.json()) as HistoryRecord[];
-    renderHistory();
+    const data = (await res.json()) as HistoryRecord[];
+    const hash = JSON.stringify(data);
+    if (!silent || hash !== lastHistoryHash) {
+      lastHistoryHash = hash;
+      historyEntries = data;
+      renderHistory();
+    }
   } catch {
     // Non-blocking fallback
   }
@@ -1617,9 +1686,50 @@ async function recordHistoryEntry(lpa: LpaData, rawPhone: string) {
     } else {
       historyEntries.unshift(saved);
     }
+    lastHistoryHash = JSON.stringify(historyEntries);
     renderHistory();
   } catch {
     // Keep QR UI responsive even if logging fails
+  }
+}
+
+async function toggleHistoryActivated(id: string, nextActivated: boolean, triggerBtn?: HTMLButtonElement) {
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.setAttribute('aria-busy', 'true');
+  }
+  try {
+    const res = await apiFetch(`/admin/history/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ activated: nextActivated })
+    });
+    if (res.status === 401 || res.status === 403) {
+      clearStoredToken();
+      showLogin();
+      return;
+    }
+    if (!res.ok) {
+      showError(dashboardError, 'Could not update activation status.');
+      return;
+    }
+    const updated = (await res.json()) as HistoryRecord;
+    const idx = historyEntries.findIndex((h) => h.id === updated.id);
+    if (idx !== -1) {
+      historyEntries[idx] = updated;
+    } else {
+      historyEntries.unshift(updated);
+    }
+    lastHistoryHash = JSON.stringify(historyEntries);
+    renderHistory();
+    clearError(dashboardError);
+    showToast(updated.activated ? 'Marked as activated.' : 'Marked as not activated.');
+  } catch {
+    showError(dashboardError, 'Network error while updating activation status.');
+  } finally {
+    if (triggerBtn && triggerBtn.isConnected) {
+      triggerBtn.disabled = false;
+      triggerBtn.removeAttribute('aria-busy');
+    }
   }
 }
 
@@ -1628,6 +1738,7 @@ async function deleteHistoryEntry(id: string) {
     const res = await apiFetch(`/admin/history/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!res.ok) return;
     historyEntries = historyEntries.filter((h) => h.id !== id);
+    lastHistoryHash = JSON.stringify(historyEntries);
     renderHistory();
     showToast('History entry deleted.');
   } catch {
@@ -1660,6 +1771,7 @@ clearHistoryBtn?.addEventListener('click', async () => {
       return;
     }
     historyEntries = [];
+    lastHistoryHash = JSON.stringify(historyEntries);
     renderHistory();
     showToast('History cleared.');
   } catch {
@@ -1716,6 +1828,12 @@ function selectWorkspaceTab(
   }
   if (opts.scroll !== false) {
     nextTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  if (nextTab === tabActivations) {
+    void loadActivations(true);
+  }
+  if (nextTab === tabHistory) {
+    void loadHistory(true);
   }
   if (nextTab === tabStatus && (!lastStatusData || Date.now() - statusFetchedAtMs > 30000)) {
     void loadSystemStatus(false);
@@ -1810,23 +1928,15 @@ activationSearchInput?.addEventListener('input', () => {
 
 // Shared QR Image Decoder & Screen Cutout Helper
 async function decodeQrFile(file: File): Promise<LpaData | null> {
-  const tempId = `admin-qr-temp-${Date.now()}`;
-  const tempDiv = document.createElement('div');
-  tempDiv.id = tempId;
-  tempDiv.className = 'sr-only';
-  document.body.appendChild(tempDiv);
-
-  try {
-    const scanner = new Html5Qrcode(tempId, {
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      verbose: false
-    });
-    const decoded = await scanner.scanFile(file, false);
-    await scanner.clear();
-    return parseLpaCode(decoded);
-  } finally {
-    tempDiv.remove();
+  const texts = await decodeQrFromFile(file);
+  if (texts.length === 0) {
+    throw new Error('No QR code found in image.');
   }
+  for (const text of texts) {
+    const parsed = parseLpaCode(text);
+    if (parsed) return parsed;
+  }
+  return null;
 }
 
 async function captureScreenCutoutFile(): Promise<File> {
@@ -1857,25 +1967,15 @@ async function captureScreenCutoutFile(): Promise<File> {
   return new File([blob], 'screenshot.png', { type: 'image/png' });
 }
 
-function getResponsiveQrBox(viewfinderWidth: number, viewfinderHeight: number) {
-  const minEdge = Math.min(viewfinderWidth || 260, viewfinderHeight || 260);
-  const size = Math.max(150, Math.min(220, Math.floor(minEdge * 0.72)));
-  return { width: size, height: size };
-}
-
 // Modal Scanner Controls
 async function stopModalQrScanner() {
-  if (modalScanner && modalScannerActive) {
+  if (modalScanner) {
     try {
       await modalScanner.stop();
     } catch {
       // Ignore stop errors
     }
-    try {
-      modalScanner.clear();
-    } catch {
-      // Ignore cleanup errors
-    }
+    modalScanner = null;
   }
   modalScannerActive = false;
   const readerEl = document.getElementById('admin-qr-reader');
@@ -2052,34 +2152,40 @@ adminQrScanBtn.addEventListener('click', async () => {
     await stopModalQrScanner();
     return;
   }
+  const readerEl = document.getElementById('admin-qr-reader');
+  if (!readerEl) return;
+
   clearError(formError);
   adminQrContainer.hidden = false;
   adminQrScanBtn.textContent = 'Stop Scanner';
   adminQrStatus.textContent = 'Starting camera…';
 
-  try {
-    modalScanner = new Html5Qrcode('admin-qr-reader', {
-      verbose: false,
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-    });
-    await modalScanner.start(
-      { facingMode: 'environment' },
-      { fps: 18, qrbox: getResponsiveQrBox },
-      (decodedText) => {
-        const parsed = parseLpaCode(decodedText);
+  const scanner = new FastQrCameraScanner({
+    container: readerEl,
+    onDecode: (texts) => {
+      for (const text of texts) {
+        const parsed = parseLpaCode(text);
         if (parsed) {
           lpaInput.value = formatLpaString(parsed);
           void stopModalQrScanner();
+          return true;
         }
-      },
-      () => {}
-    );
+      }
+      return false;
+    }
+  });
+  modalScanner = scanner;
+
+  try {
+    await scanner.start();
     modalScannerActive = true;
     markCameraPermissionGranted();
     adminQrStatus.textContent = 'Point camera at LPA QR code.';
   } catch (err) {
     clearCameraPermissionIfDenied(err);
+    await scanner.stop().catch(() => {});
+    modalScanner = null;
+    readerEl.replaceChildren();
     adminQrStatus.textContent = 'Camera unavailable or permission denied.';
     modalScannerActive = false;
     adminQrScanBtn.textContent = 'Scan QR';
@@ -2276,11 +2382,7 @@ async function displayQlResult(lpa: LpaData, phone?: string, recordHistory = tru
 function pauseQlScanner() {
   if (!qlScanner || !qlScannerActive || qlScannerPaused) return;
   qlScannerPaused = true;
-  try {
-    qlScanner.pause(true);
-  } catch {
-    // Ignore pause transition errors
-  }
+  qlScanner.pause();
   qlScannerContainer?.classList.add('is-paused');
   if (qlScannerStatus) {
     qlScannerStatus.textContent = 'QR code scanned — camera paused. Clear / Reset to scan again.';
@@ -2294,17 +2396,13 @@ function pauseQlScanner() {
 }
 
 async function stopQlScanner() {
-  if (qlScanner && qlScannerActive) {
+  if (qlScanner) {
     try {
       await qlScanner.stop();
     } catch {
       // Ignore stop errors
     }
-    try {
-      qlScanner.clear();
-    } catch {
-      // Ignore cleanup errors
-    }
+    qlScanner = null;
   }
   qlScannerActive = false;
   qlScannerPaused = false;
@@ -2316,13 +2414,15 @@ async function stopQlScanner() {
   }
   if (qlCameraStartBtn) {
     qlCameraStartBtn.hidden = false;
+    qlCameraStartBtn.textContent = 'Start Camera';
   }
   if (qlOverlayState) qlOverlayState.hidden = false;
   if (qlCameraStopBar) qlCameraStopBar.hidden = true;
 }
 
 async function startQlScanner() {
-  if (qlScannerStarting) return;
+  const readerEl = document.getElementById('ql-qr-reader');
+  if (!readerEl || qlScannerStarting) return;
   qlScannerStarting = true;
   await stopQlScanner();
   clearError(qlErrorBox);
@@ -2332,28 +2432,28 @@ async function startQlScanner() {
     qlCameraStartBtn.disabled = true;
   }
 
-  try {
-    qlScanner = new Html5Qrcode('ql-qr-reader', {
-      verbose: false,
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-    });
-    await qlScanner.start(
-      { facingMode: 'environment' },
-      { fps: 18, qrbox: getResponsiveQrBox },
-      (decoded) => {
-        if (qlScannerPaused) return;
-        const parsed = parseLpaCode(decoded);
+  const scanner = new FastQrCameraScanner({
+    container: readerEl,
+    onDecode: (texts) => {
+      if (qlScannerPaused) return false;
+      for (const text of texts) {
+        const parsed = parseLpaCode(text);
         if (parsed) {
           pauseQlScanner();
           if (qlSmdpInput) qlSmdpInput.value = parsed.smdpAddress;
           if (qlCodeInput) qlCodeInput.value = parsed.activationCode;
           if (qlConfirmInput) qlConfirmInput.value = parsed.confirmationCode;
           void displayQlResult(parsed, qlPhoneInput?.value);
+          return true;
         }
-      },
-      () => {}
-    );
+      }
+      return false;
+    }
+  });
+  qlScanner = scanner;
+
+  try {
+    await scanner.start();
     qlScannerActive = true;
     qlScannerPaused = false;
     markCameraPermissionGranted();
@@ -2362,11 +2462,18 @@ async function startQlScanner() {
     if (qlCameraStopBar) qlCameraStopBar.hidden = false;
   } catch (err) {
     clearCameraPermissionIfDenied(err);
-    const readerEl = document.getElementById('ql-qr-reader');
-    if (readerEl) readerEl.replaceChildren();
+    await scanner.stop().catch(() => {});
+    qlScanner = null;
+    readerEl.replaceChildren();
+    qlScannerActive = false;
+    qlScannerPaused = false;
     qlScannerContainer?.classList.remove('is-paused');
-    if (qlCameraStartBtn) qlCameraStartBtn.hidden = false;
+    if (qlCameraStartBtn) {
+      qlCameraStartBtn.hidden = false;
+      qlCameraStartBtn.textContent = 'Retry Camera';
+    }
     if (qlOverlayState) qlOverlayState.hidden = false;
+    if (qlCameraStopBar) qlCameraStopBar.hidden = true;
     if (qlScannerStatus) qlScannerStatus.textContent = 'Camera unavailable or permission denied.';
     showError(qlErrorBox, 'Camera permission denied or no camera available.');
   } finally {
@@ -2377,21 +2484,14 @@ async function startQlScanner() {
 
 async function resumeOrRestartQlScanner() {
   if (qlScanner && qlScannerActive && qlScannerPaused) {
-    const readerEl = document.getElementById('ql-qr-reader');
-    const video = readerEl?.querySelector('video') as HTMLVideoElement | null;
-    const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
-    if (track && track.readyState === 'live') {
-      try {
-        qlScanner.resume();
-        qlScannerPaused = false;
-        qlScannerContainer?.classList.remove('is-paused');
-        if (qlOverlayState) qlOverlayState.hidden = true;
-        if (qlCameraStartBtn) qlCameraStartBtn.hidden = false;
-        if (qlCameraStopBar) qlCameraStopBar.hidden = false;
-        return;
-      } catch {
-        // Fall through to full camera restart
-      }
+    const resumed = await qlScanner.resume();
+    if (resumed) {
+      qlScannerPaused = false;
+      qlScannerContainer?.classList.remove('is-paused');
+      if (qlOverlayState) qlOverlayState.hidden = true;
+      if (qlCameraStartBtn) qlCameraStartBtn.hidden = false;
+      if (qlCameraStopBar) qlCameraStopBar.hidden = false;
+      return;
     }
   }
   if (mobileCameraQuery.matches && (await hasPreviousCameraPermission())) {
@@ -2732,17 +2832,27 @@ resetPwForm.addEventListener('submit', async (e) => {
   }
 });
 
+function handleAdminVisibilityChange() {
+  if (!document.hidden && !dashboard.hidden && countdownInterval) {
+    void runAutoRefreshCycle();
+  }
+}
+
+document.addEventListener('visibilitychange', handleAdminVisibilityChange);
+
 document.addEventListener('language-change', () => {
   syncTableHeaderVars();
   renderActivations();
   renderHistory();
   if (lastStatusData) renderSystemStatus(lastStatusData);
+  setRefreshPillText(autoRefreshInFlight ? 'Checking…' : `Auto-refresh: ${refreshCountdown}s`);
 });
 
 addEventListener(
   'pagehide',
   () => {
     stopAutoRefresh();
+    document.removeEventListener('visibilitychange', handleAdminVisibilityChange);
     void stopModalQrScanner();
     void stopQlScanner();
   },

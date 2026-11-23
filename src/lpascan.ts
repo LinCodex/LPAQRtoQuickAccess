@@ -1,5 +1,4 @@
 import './site';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import QRCode from 'qrcode';
 import {
   encodePhoneParam,
@@ -9,6 +8,7 @@ import {
   sanitizePhoneNumber,
   type LpaData
 } from './lpa-utils';
+import { FastQrCameraScanner, decodeQrFromFile } from './qr-scanner-engine';
 
 // Auto-redirect signed-in admins ("Remember me" enabled) directly to /admin unless ?stay=1 is set
 const urlParams = new URLSearchParams(window.location.search);
@@ -42,7 +42,7 @@ try {
   // Ignore storage restrictions
 }
 
-let html5QrCode: Html5Qrcode | null = null;
+let cameraScanner: FastQrCameraScanner | null = null;
 let isScannerRunning = false;
 let isScannerPaused = false;
 let isScannerStarting = false;
@@ -331,20 +331,10 @@ async function displayResult(lpa: LpaData, phone?: string) {
   clearError();
 }
 
-function getResponsiveQrBox(viewfinderWidth: number, viewfinderHeight: number) {
-  const minEdge = Math.min(viewfinderWidth || 260, viewfinderHeight || 260);
-  const size = Math.max(150, Math.min(220, Math.floor(minEdge * 0.72)));
-  return { width: size, height: size };
-}
-
 function pauseScanner() {
-  if (!html5QrCode || !isScannerRunning || isScannerPaused) return;
+  if (!cameraScanner || !isScannerRunning || isScannerPaused) return;
   isScannerPaused = true;
-  try {
-    html5QrCode.pause(true);
-  } catch {
-    // Ignore pause transition errors
-  }
+  cameraScanner.pause();
   scannerContainer?.classList.add('is-paused');
   if (statusText) {
     statusText.textContent = 'QR code scanned — camera paused. Scan Another Code to resume.';
@@ -358,17 +348,13 @@ function pauseScanner() {
 }
 
 async function stopScanner() {
-  if (html5QrCode && isScannerRunning) {
+  if (cameraScanner) {
     try {
-      await html5QrCode.stop();
+      await cameraScanner.stop();
     } catch {
       // Ignore stop error if stream already ended
     }
-    try {
-      html5QrCode.clear();
-    } catch {
-      // Ignore clear error
-    }
+    cameraScanner = null;
   }
   isScannerRunning = false;
   isScannerPaused = false;
@@ -385,21 +371,14 @@ async function stopScanner() {
   if (stopBar) stopBar.hidden = true;
 }
 
-async function onCodeDetected(code: string, fromCamera = false) {
-  const lpa = parseLpaCode(code);
-  if (lpa) {
-    if (fromCamera) {
-      pauseScanner();
-    } else if (isScannerRunning && !isScannerPaused) {
-      pauseScanner();
-    }
-    if (smdpInput) smdpInput.value = lpa.smdpAddress;
-    if (codeInput) codeInput.value = lpa.activationCode;
-    if (confirmInput) confirmInput.value = lpa.confirmationCode;
-    await displayResult(lpa, phoneInput?.value);
-  } else if (!fromCamera) {
-    showError(`QR code scanned, but it does not match eSIM LPA format: ${code.slice(0, 40)}`);
+async function applyDetectedLpa(lpa: LpaData, pauseCamera: boolean) {
+  if (pauseCamera && isScannerRunning && !isScannerPaused) {
+    pauseScanner();
   }
+  if (smdpInput) smdpInput.value = lpa.smdpAddress;
+  if (codeInput) codeInput.value = lpa.activationCode;
+  if (confirmInput) confirmInput.value = lpa.confirmationCode;
+  await displayResult(lpa, phoneInput?.value);
 }
 
 async function startScanner() {
@@ -415,25 +394,22 @@ async function startScanner() {
   }
 
   try {
-    html5QrCode = new Html5Qrcode('lpa-qr-reader', {
-      verbose: false,
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+    const scanner = new FastQrCameraScanner({
+      container: readerElement,
+      onDecode: (texts) => {
+        if (isScannerPaused) return false;
+        for (const text of texts) {
+          const parsed = parseLpaCode(text);
+          if (parsed) {
+            void applyDetectedLpa(parsed, true);
+            return true;
+          }
+        }
+        return false;
+      }
     });
-
-    await html5QrCode.start(
-      { facingMode: 'environment' },
-      {
-        fps: 20,
-        qrbox: getResponsiveQrBox,
-        disableFlip: false
-      },
-      (decodedText) => {
-        if (isScannerPaused) return;
-        void onCodeDetected(decodedText, true);
-      },
-      () => {}
-    );
+    cameraScanner = scanner;
+    await scanner.start();
 
     isScannerRunning = true;
     isScannerPaused = false;
@@ -444,6 +420,7 @@ async function startScanner() {
   } catch (err) {
     console.warn('Camera access unavailable or denied:', err);
     clearCameraPermissionIfDenied(err);
+    cameraScanner = null;
     isScannerRunning = false;
     isScannerPaused = false;
     scannerContainer?.classList.remove('is-paused');
@@ -464,21 +441,15 @@ async function startScanner() {
 }
 
 async function resumeOrRestartScanner() {
-  if (html5QrCode && isScannerRunning && isScannerPaused) {
-    const video = readerElement?.querySelector('video') as HTMLVideoElement | null;
-    const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
-    if (track && track.readyState === 'live') {
-      try {
-        html5QrCode.resume();
-        isScannerPaused = false;
-        scannerContainer?.classList.remove('is-paused');
-        if (overlayState) overlayState.hidden = true;
-        if (startBtn) startBtn.hidden = false;
-        if (stopBar) stopBar.hidden = false;
-        return;
-      } catch {
-        // Fall through to full restart
-      }
+  if (cameraScanner && isScannerRunning && isScannerPaused) {
+    const resumed = await cameraScanner.resume();
+    if (resumed) {
+      isScannerPaused = false;
+      scannerContainer?.classList.remove('is-paused');
+      if (overlayState) overlayState.hidden = true;
+      if (startBtn) startBtn.hidden = false;
+      if (stopBar) stopBar.hidden = false;
+      return;
     }
   }
   if (isMobileCameraAllowed() && (await hasPreviousCameraPermission())) {
@@ -489,24 +460,22 @@ async function resumeOrRestartScanner() {
 }
 
 async function scanImageFile(file: File) {
-  const tempId = `lpa-scan-temp-${Date.now()}`;
-  const tempDiv = document.createElement('div');
-  tempDiv.id = tempId;
-  tempDiv.className = 'sr-only';
-  document.body.appendChild(tempDiv);
-
   try {
-    const scanner = new Html5Qrcode(tempId, {
-      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-      verbose: false
-    });
-    const result = await scanner.scanFile(file, false);
-    await scanner.clear();
-    await onCodeDetected(result);
+    const texts = await decodeQrFromFile(file);
+    if (texts.length === 0) {
+      showError('Could not read a QR code from this image. Please ensure the code is clear and well-lit.');
+      return;
+    }
+    for (const text of texts) {
+      const parsed = parseLpaCode(text);
+      if (parsed) {
+        await applyDetectedLpa(parsed, true);
+        return;
+      }
+    }
+    showError(`QR code scanned, but it does not match eSIM LPA format: ${texts[0].slice(0, 40)}`);
   } catch {
     showError('Could not read a QR code from this image. Please ensure the code is clear and well-lit.');
-  } finally {
-    tempDiv.remove();
   }
 }
 

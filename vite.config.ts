@@ -81,6 +81,9 @@ function devAssetsAndRewritesPlugin(): Plugin {
 export default defineConfig({
   publicDir: 'outputs/web',
   plugins: [devAssetsAndRewritesPlugin()],
+  optimizeDeps: {
+    exclude: ['zxing-wasm']
+  },
   build: {
     outDir: 'build',
     rollupOptions: {

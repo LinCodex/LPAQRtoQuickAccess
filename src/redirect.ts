@@ -244,6 +244,13 @@ if (initialParsed) {
   showInvalid(hasValidPollId);
 
   if (hasValidPollId && activationId) {
+    let pollVisibilityHandler: (() => void) | null = null;
+    const stopVisibilityWatch = () => {
+      if (pollVisibilityHandler) {
+        document.removeEventListener('visibilitychange', pollVisibilityHandler);
+        pollVisibilityHandler = null;
+      }
+    };
     const poll = async () => {
       if (document.hidden) return;
       try {
@@ -253,6 +260,7 @@ if (initialParsed) {
         if (res.status === 404 || res.status === 400) {
           showInvalid(false);
           clearInterval(pollTimer);
+          stopVisibilityWatch();
           return;
         }
         if (!res.ok) return;
@@ -280,6 +288,11 @@ if (initialParsed) {
         // Keep silent retry until network recovers
       }
     };
+    pollVisibilityHandler = () => {
+      if (!document.hidden) void poll();
+    };
+    document.addEventListener('visibilitychange', pollVisibilityHandler);
+    addEventListener('pagehide', stopVisibilityWatch, { once: true });
     void poll();
     pollTimer = window.setInterval(() => void poll(), 4000);
   }

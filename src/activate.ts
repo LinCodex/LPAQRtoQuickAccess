@@ -114,28 +114,43 @@ activateBtn?.addEventListener('click', () => {
 });
 
 const id = new URLSearchParams(window.location.search).get('id');
+let hasLoadedOnce = false;
 
 async function fetchActivation() {
   if (!id || !/^[A-Za-z0-9_-]{4,64}$/.test(id)) {
     showError();
     clearInterval(pollTimer);
+    document.removeEventListener('visibilitychange', onActivateVisibilityChange);
     return;
   }
 
   try {
     const res = await fetch(`${API_BASE}/activation/${encodeURIComponent(id)}`, { cache: 'no-store' });
-    if (!res.ok) {
+    if (res.status === 404 || res.status === 400) {
       showError();
-      if (res.status === 404 || res.status === 400) clearInterval(pollTimer);
+      clearInterval(pollTimer);
+      document.removeEventListener('visibilitychange', onActivateVisibilityChange);
+      return;
+    }
+    if (!res.ok) {
+      if (!hasLoadedOnce) showError();
       return;
     }
     const data = (await res.json()) as ActivationResponse;
+    hasLoadedOnce = true;
     renderActivation(data);
   } catch {
-    showError();
+    if (!hasLoadedOnce) showError();
   }
 }
 
+function onActivateVisibilityChange() {
+  if (!document.hidden) {
+    void fetchActivation();
+  }
+}
+
+document.addEventListener('visibilitychange', onActivateVisibilityChange);
 void fetchActivation();
 pollTimer = window.setInterval(() => {
   if (!document.hidden) {
@@ -143,4 +158,11 @@ pollTimer = window.setInterval(() => {
   }
 }, 5000);
 
-addEventListener('pagehide', () => clearInterval(pollTimer), { once: true });
+addEventListener(
+  'pagehide',
+  () => {
+    clearInterval(pollTimer);
+    document.removeEventListener('visibilitychange', onActivateVisibilityChange);
+  },
+  { once: true }
+);

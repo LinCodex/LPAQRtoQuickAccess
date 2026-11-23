@@ -538,6 +538,8 @@ app.post('/api/admin/history', authenticateToken, (req, res) => {
       activationCode: parts.activationCode,
       confirmationCode: parts.confirmationCode,
       phoneNumber: phoneNumber || existing.phoneNumber || '',
+      activated: Boolean(existing.activated),
+      activatedAt: existing.activated ? (existing.activatedAt || null) : null,
       updatedAt: new Date().toISOString()
     };
     items[matchIdx] = updated;
@@ -564,6 +566,8 @@ app.post('/api/admin/history', authenticateToken, (req, res) => {
     activationCode: parts.activationCode,
     confirmationCode: parts.confirmationCode,
     phoneNumber,
+    activated: false,
+    activatedAt: null,
     createdAt: new Date().toISOString(),
     createdBy: req.user.username
   };
@@ -573,6 +577,38 @@ app.post('/api/admin/history', authenticateToken, (req, res) => {
   writeHistory(items);
   res.status(201).json(entry);
 });
+
+function handleUpdateHistoryById(req, res) {
+  const { id } = req.params;
+  if (!validateId(id)) {
+    return res.status(400).json({ error: 'Invalid history ID' });
+  }
+
+  const items = readHistory();
+  const index = items.findIndex((item) => item.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'History entry not found' });
+  }
+
+  const existing = items[index];
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const nextActivated = typeof body.activated === 'boolean' ? body.activated : !Boolean(existing.activated);
+  const nowIso = new Date().toISOString();
+  const updated = {
+    ...existing,
+    activated: nextActivated,
+    activatedAt: nextActivated ? (existing.activated && existing.activatedAt ? existing.activatedAt : nowIso) : null,
+    updatedAt: nowIso,
+    updatedBy: req.user.username
+  };
+
+  items[index] = updated;
+  writeHistory(items);
+  return res.json(updated);
+}
+
+app.patch('/api/admin/history/:id', authenticateToken, handleUpdateHistoryById);
+app.put('/api/admin/history/:id', authenticateToken, handleUpdateHistoryById);
 
 app.delete('/api/admin/history/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
