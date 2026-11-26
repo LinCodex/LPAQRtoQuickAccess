@@ -11,6 +11,8 @@ interface ActivationResponse {
 }
 
 const statusBadge = document.getElementById('status-badge');
+const activateProgress = document.getElementById('activate-progress');
+const wechatBanner = document.getElementById('wechat-safari-banner');
 const actDesc = document.getElementById('act-desc');
 const phoneDisplay = document.getElementById('phone-display');
 const phoneNumber = document.getElementById('phone-number');
@@ -18,6 +20,10 @@ const activateBtn = document.getElementById('activate-btn') as HTMLButtonElement
 const standbyBtn = document.getElementById('standby-btn') as HTMLButtonElement | null;
 const processingBtn = document.getElementById('processing-btn') as HTMLButtonElement | null;
 const errorDiv = document.getElementById('error-div');
+
+if (wechatBanner) {
+  wechatBanner.hidden = !/MicroMessenger/i.test(navigator.userAgent || '');
+}
 
 const instructionsDialog = document.getElementById('instructions-dialog') as HTMLDialogElement | null;
 const instrClose = document.getElementById('instr-close') as HTMLButtonElement | null;
@@ -55,12 +61,19 @@ function showError() {
     actDesc.hidden = true;
   }
   if (statusBadge) statusBadge.hidden = true;
+  if (activateProgress) activateProgress.hidden = true;
   if (phoneDisplay) phoneDisplay.hidden = true;
   if (activateBtn) activateBtn.hidden = true;
   if (standbyBtn) standbyBtn.hidden = true;
   if (processingBtn) processingBtn.hidden = true;
   if (errorDiv) errorDiv.hidden = false;
 }
+
+const STAGE_ORDER: Record<ActivationResponse['status'], number> = {
+  standby: 0,
+  processing: 1,
+  active: 2
+};
 
 function renderActivation(data: ActivationResponse) {
   if (errorDiv) errorDiv.hidden = true;
@@ -70,6 +83,15 @@ function renderActivation(data: ActivationResponse) {
     statusBadge.className = `status-pill status-${status}`;
     statusBadge.textContent = status === 'active' ? 'Ready' : status === 'processing' ? 'Processing' : 'Standby';
     statusBadge.hidden = false;
+  }
+
+  if (activateProgress) {
+    activateProgress.hidden = false;
+    const currentIdx = STAGE_ORDER[status];
+    activateProgress.querySelectorAll<HTMLLIElement>('li[data-stage]').forEach((item, index) => {
+      item.classList.toggle('is-complete', index < currentIdx);
+      item.classList.toggle('is-current', index === currentIdx);
+    });
   }
 
   if (actDesc) {

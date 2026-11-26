@@ -55,7 +55,7 @@ export default async function handler(req, res) {
     let tokenValid = false;
     if (envToken && timingSafeCompare(tokenInput, envToken)) {
       tokenValid = true;
-    } else if (storedTokenHash && bcrypt.compareSync(tokenInput, storedTokenHash)) {
+    } else if (storedTokenHash && (await bcrypt.compare(tokenInput, storedTokenHash))) {
       tokenValid = true;
     }
 
@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid reset token' });
     }
 
-    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     const userData = await redis.get('user:admin');
 
     if (userData) {

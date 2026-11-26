@@ -193,6 +193,15 @@ export function sanitizeField(val, maxLen) {
   return val.trim().slice(0, maxLen);
 }
 
+export function maskPhoneNumber(phone) {
+  if (!phone || typeof phone !== 'string') return null;
+  const trimmed = phone.trim();
+  if (!trimmed) return null;
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 4) return '****';
+  return trimmed.slice(0, -4).replace(/\d/g, '*') + trimmed.slice(-4);
+}
+
 export function getPublicBaseUrl(req) {
   if (process.env.PUBLIC_BASE_URL) {
     return process.env.PUBLIC_BASE_URL.trim().replace(/\/+$/, '');

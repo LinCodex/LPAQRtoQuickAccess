@@ -40,12 +40,12 @@ export default async function handler(req, res) {
     }
 
     const existingUser = JSON.parse(userData);
-    if (!bcrypt.compareSync(currentPassword, existingUser.password)) {
+    if (!(await bcrypt.compare(currentPassword, existingUser.password))) {
       await closeRedisClient(redis);
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     await redis.set(`user:${user.username}`, JSON.stringify({
       ...existingUser,
       id: user.id,

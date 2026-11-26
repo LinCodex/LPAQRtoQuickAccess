@@ -87,6 +87,38 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/api', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
+const localRateLimitMap = new Map();
+
+function checkLocalRateLimit(bucketKey, maxAttempts, windowMs) {
+  const now = Date.now();
+  const entry = localRateLimitMap.get(bucketKey);
+  if (!entry || entry.resetAt <= now) {
+    localRateLimitMap.set(bucketKey, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= maxAttempts;
+}
+
+function getLocalClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+
+function timingSafeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const digestA = crypto.createHash('sha256').update(a).digest();
+  const digestB = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(digestA, digestB);
+}
 
 function getBootstrapPassword() {
   const configured = process.env.ADMIN_BOOTSTRAP_PASSWORD;
@@ -245,7 +277,7 @@ const authenticateToken = (req, res, next) => {
   }
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
     req.user = user;
     next();
@@ -253,6 +285,14 @@ const authenticateToken = (req, res, next) => {
 };
 
 // ============ PUBLIC ROUTES ============
+
+app.get('/api/health', (_req, res) => {
+  res.json({
+    ok: true,
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.get('/api/activation/:id', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -281,7 +321,12 @@ app.get('/api/activation/:id', (req, res) => {
 
 // ============ AUTH ROUTES ============
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
+  const ip = getLocalClientIp(req);
+  if (!checkLocalRateLimit(`login:${ip}`, 10, 15 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+  }
+
   const { username, password, rememberMe } = req.body || {};
   if (typeof username !== 'string' || typeof password !== 'string' || !username.trim() || !password) {
     return res.status(400).json({ error: 'Username and password required' });
@@ -293,7 +338,7 @@ app.post('/api/auth/login', (req, res) => {
   const user = userIndex >= 0 ? users[userIndex] : null;
   const bootstrapPassword = getBootstrapPassword();
 
-  let authenticated = Boolean(user && bcrypt.compareSync(password, user.password));
+  let authenticated = Boolean(user && (await bcrypt.compare(password, user.password)));
 
   if (
     !authenticated &&
@@ -301,9 +346,9 @@ app.post('/api/auth/login', (req, res) => {
     cleanUsername === 'admin' &&
     !user.passwordSetByUser &&
     bootstrapPassword &&
-    password === bootstrapPassword
+    timingSafeCompare(password, bootstrapPassword)
   ) {
-    users[userIndex].password = bcrypt.hashSync(bootstrapPassword, 10);
+    users[userIndex].password = await bcrypt.hash(bootstrapPassword, 10);
     users[userIndex].updatedAt = new Date().toISOString();
     writeUsers(users);
     authenticated = true;
@@ -328,7 +373,7 @@ app.post('/api/auth/login', (req, res) => {
 
 app.post('/api/auth/logout', (_req, res) => {
   clearSessionCookie(res);
-  res.setHeader('Clear-Site-Data', '"cookies", "storage"');
+  res.setHeader('Clear-Site-Data', '"cookies"');
   res.json({ message: 'Logged out' });
 });
 
@@ -336,7 +381,7 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
   res.json({ valid: true, username: req.user.username });
 });
 
-app.post('/api/auth/change-password', authenticateToken, (req, res) => {
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || !currentPassword || !newPassword) {
     return res.status(400).json({ error: 'Current and new password required' });
@@ -352,18 +397,23 @@ app.post('/api/auth/change-password', authenticateToken, (req, res) => {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  if (!bcrypt.compareSync(currentPassword, users[userIndex].password)) {
+  if (!(await bcrypt.compare(currentPassword, users[userIndex].password))) {
     return res.status(401).json({ error: 'Current password is incorrect' });
   }
 
-  users[userIndex].password = bcrypt.hashSync(newPassword, 10);
+  users[userIndex].password = await bcrypt.hash(newPassword, 10);
   users[userIndex].passwordSetByUser = true;
   users[userIndex].updatedAt = new Date().toISOString();
   writeUsers(users);
   res.json({ message: 'Password changed successfully' });
 });
 
-app.post('/api/auth/reset-password', (req, res) => {
+app.post('/api/auth/reset-password', async (req, res) => {
+  const ip = getLocalClientIp(req);
+  if (!checkLocalRateLimit(`reset:${ip}`, 5, 15 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Too many reset attempts. Please try again later.' });
+  }
+
   const body = req.body || {};
   const tokenInput = typeof body.resetToken === 'string'
     ? body.resetToken.trim()
@@ -378,15 +428,13 @@ app.post('/api/auth/reset-password', (req, res) => {
     return res.status(400).json({ error: 'Valid reset token and 8+ character password required' });
   }
 
-  const a = crypto.createHash('sha256').update(tokenInput).digest();
-  const b = crypto.createHash('sha256').update(configuredToken).digest();
-  if (!crypto.timingSafeEqual(a, b)) {
+  if (!timingSafeCompare(tokenInput, configuredToken)) {
     return res.status(401).json({ error: 'Invalid reset token' });
   }
 
   const users = readUsers();
   const adminIdx = users.findIndex((u) => u.username === 'admin');
-  const hashed = bcrypt.hashSync(newPassword, 10);
+  const hashed = await bcrypt.hash(newPassword, 10);
   if (adminIdx >= 0) {
     users[adminIdx].password = hashed;
     users[adminIdx].passwordSetByUser = true;
@@ -933,8 +981,12 @@ app.post('/api/admin/cleanup', authenticateToken, (_req, res) => {
 // ============ HELPER FUNCTIONS ============
 
 function maskPhoneNumber(phone) {
-  if (!phone || phone.length < 4) return phone;
-  return phone.slice(0, -4).replace(/./g, '*') + phone.slice(-4);
+  if (!phone || typeof phone !== 'string') return null;
+  const trimmed = phone.trim();
+  if (!trimmed) return null;
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 4) return '****';
+  return trimmed.slice(0, -4).replace(/\d/g, '*') + trimmed.slice(-4);
 }
 
 function generateActivationUrl(lpaCode) {
@@ -956,6 +1008,11 @@ function generateShortId() {
 // ============ SHORT LINK ROUTES ============
 
 app.post('/api/shortlink', (req, res) => {
+  const ip = getLocalClientIp(req);
+  if (!checkLocalRateLimit(`shortlink:${ip}`, 30, 15 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Too many short link requests. Please try again shortly.' });
+  }
+
   const { lpaCode } = req.body || {};
 
   if (!validateLpaCode(lpaCode)) {

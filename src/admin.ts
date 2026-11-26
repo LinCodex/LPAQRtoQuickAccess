@@ -264,6 +264,11 @@ const resetPwSuccess = document.getElementById('reset-pw-success')!;
 const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
 const deleteError = document.getElementById('delete-error')!;
 
+const clearHistoryDialog = document.getElementById('clear-history-dialog') as HTMLDialogElement;
+const clearHistoryError = document.getElementById('clear-history-error')!;
+const cancelClearHistoryBtn = document.getElementById('cancel-clear-history') as HTMLButtonElement | null;
+const confirmClearHistoryBtn = document.getElementById('confirm-clear-history') as HTMLButtonElement | null;
+
 let activations: ActivationRecord[] = [];
 let historyEntries: HistoryRecord[] = [];
 let historySortOrder: 'desc' | 'asc' = 'desc';
@@ -411,7 +416,7 @@ function enableBackdropFallback(dialog: HTMLDialogElement) {
   });
 }
 
-[activationDialog, changePwDialog, resetPwDialog, deleteDialog].forEach(enableBackdropFallback);
+[activationDialog, changePwDialog, resetPwDialog, deleteDialog, clearHistoryDialog].forEach(enableBackdropFallback);
 
 function getStoredToken(): string | null {
   try {
@@ -1761,23 +1766,39 @@ historySortSelect?.addEventListener('change', () => {
   renderHistory();
 });
 
-clearHistoryBtn?.addEventListener('click', async () => {
+document.getElementById('clear-history-close')?.addEventListener('click', () => clearHistoryDialog.close());
+cancelClearHistoryBtn?.addEventListener('click', () => clearHistoryDialog.close());
+
+clearHistoryBtn?.addEventListener('click', () => {
   if (historyEntries.length === 0) return;
-  clearHistoryBtn.disabled = true;
+  clearError(clearHistoryError);
+  if (!clearHistoryDialog.open) clearHistoryDialog.showModal();
+});
+
+confirmClearHistoryBtn?.addEventListener('click', async () => {
+  if (historyEntries.length === 0) {
+    clearHistoryDialog.close();
+    return;
+  }
+  clearError(clearHistoryError);
+  confirmClearHistoryBtn.disabled = true;
+  if (clearHistoryBtn) clearHistoryBtn.disabled = true;
   try {
     const res = await apiFetch('/admin/history', { method: 'DELETE' });
     if (!res.ok) {
-      showError(dashboardError, 'Could not clear history.');
+      showError(clearHistoryError, 'Could not clear history.');
       return;
     }
     historyEntries = [];
     lastHistoryHash = JSON.stringify(historyEntries);
+    clearHistoryDialog.close();
     renderHistory();
     showToast('History cleared.');
   } catch {
-    showError(dashboardError, 'Network error while clearing history.');
+    showError(clearHistoryError, 'Network error while clearing history.');
   } finally {
-    clearHistoryBtn.disabled = historyEntries.length === 0;
+    confirmClearHistoryBtn.disabled = false;
+    if (clearHistoryBtn) clearHistoryBtn.disabled = historyEntries.length === 0;
   }
 });
 

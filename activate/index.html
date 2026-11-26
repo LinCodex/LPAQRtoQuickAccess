@@ -32,6 +32,14 @@
 
   <main id="main" class="utility-page">
     <div class="utility-shell">
+      <div id="wechat-safari-banner" class="esim-wechat-banner" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/>
+          <polygon points="15.5 8.5 13.4 13.4 8.5 15.5 10.6 10.6 15.5 8.5" fill="currentColor" fill-opacity="0.2"/>
+        </svg>
+        <p>Opened in WeChat? Tap ··· at top-right and choose Open in Safari.</p>
+      </div>
+
       <div class="utility-header">
         <p class="eyebrow">EZREFILL / ESIM ACTIVATION</p>
         <h1>eSIM Activation</h1>
@@ -50,6 +58,12 @@
           </div>
           <span id="status-badge" class="status-pill status-standby" hidden>Standby</span>
         </div>
+
+        <ol id="activate-progress" class="activate-progress" aria-label="Activation progress" hidden>
+          <li data-stage="standby"><span class="activate-progress-dot" aria-hidden="true"></span><span>Standby</span></li>
+          <li data-stage="processing"><span class="activate-progress-dot" aria-hidden="true"></span><span>Processing</span></li>
+          <li data-stage="active"><span class="activate-progress-dot" aria-hidden="true"></span><span>Ready</span></li>
+        </ol>
 
         <div class="esim-status-box">
           <p id="act-desc" class="esim-desc">Loading activation…</p>
@@ -104,6 +118,7 @@
       <a class="brand" href="/">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
       <span>© <span data-year>2026</span> EZRefill</span>
       <div class="footer-links">
+        <a href="/lpascan">eSIM Scanner</a>
         <a href="/privacy/">Privacy</a>
         <a href="/store-information/">Store information</a>
       </div>
@@ -122,7 +137,7 @@
       </ol>
       <p class="esim-wifi-note">Stay connected to Wi-Fi during activation.</p>
     </div>
-    <a id="proceed-btn" href="#" class="lpa-primary-btn" style="margin-top:16px;">Proceed to Activate</a>
+    <a id="proceed-btn" href="#" class="lpa-primary-btn sheet-proceed-btn">Proceed to Activate</a>
   </dialog>
 
   <dialog id="store-sheet-dialog" class="sheet-dialog is-bottom-sheet" closedby="any" aria-label="Store Support"></dialog>

@@ -13,6 +13,6 @@ export default async function handler(req, res) {
   }
 
   clearSessionCookie(req, res);
-  res.setHeader('Clear-Site-Data', '"cookies", "storage"');
+  res.setHeader('Clear-Site-Data', '"cookies"');
   return res.status(200).json({ message: 'Logged out' });
 }

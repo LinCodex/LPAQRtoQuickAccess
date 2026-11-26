@@ -11,6 +11,14 @@ let titleRecord = { english: document.title, shown: document.title };
 
 const TRANSLATED_ATTRS = ['alt', 'aria-label', 'placeholder'] as const;
 
+let zhFontsLoaded = false;
+function ensureZhFontsLoaded() {
+  if (!zhFontsLoaded) {
+    zhFontsLoaded = true;
+    void import('./fonts-zh.css');
+  }
+}
+
 const observer = new MutationObserver(() => apply());
 
 function watch() {
@@ -24,6 +32,9 @@ function watch() {
 }
 
 function apply() {
+  if (language === 'zh-Hans') {
+    ensureZhFontsLoaded();
+  }
   observer.disconnect();
 
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);

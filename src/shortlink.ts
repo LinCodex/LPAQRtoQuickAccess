@@ -7,6 +7,9 @@ const errorEl = document.getElementById('shortlink-error');
 const errorMsgEl = document.getElementById('shortlink-error-message');
 const manualLink = document.getElementById('manual-link') as HTMLAnchorElement | null;
 
+const isLocalApi = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocalApi ? `http://${window.location.hostname}:3001/api` : '/api';
+
 let redirectTimer = 0;
 
 function showError(msg?: string) {
@@ -26,7 +29,7 @@ async function loadShortLink() {
   }
 
   try {
-    const res = await fetch(`/api/shortlink/${encodeURIComponent(id)}`);
+    const res = await fetch(`${API_BASE}/shortlink/${encodeURIComponent(id)}`, { cache: 'no-store' });
     if (!res.ok) {
       showError('This link may have expired or is invalid.');
       return;

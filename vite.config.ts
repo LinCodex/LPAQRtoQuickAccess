@@ -87,6 +87,16 @@ export default defineConfig({
   build: {
     outDir: 'build',
     rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three/examples/') || id.includes('node_modules\\three\\examples\\')) {
+            return 'three-addons';
+          }
+          if (id.includes('node_modules/three/') || id.includes('node_modules\\three\\')) {
+            return 'three-core';
+          }
+        }
+      },
       input: {
         main: resolve('index.html'),
         phones: resolve('phones/index.html'),

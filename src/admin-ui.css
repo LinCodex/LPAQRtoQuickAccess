@@ -1,8 +1,130 @@
 /* EZRefill Admin Console, Inline Controls, Custom Dropdowns & Generated History */
 
+.admin-login-wrap {
+  min-height: calc(100svh - var(--header-clear) - 40px);
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
 .admin-login-card {
   width: 100%;
   max-width: 420px;
+}
+
+.admin-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.admin-label-row label {
+  margin-bottom: 0;
+}
+
+.admin-pw-toggle {
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--control-line);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: color 140ms var(--settle), border-color 140ms var(--settle), background-color 140ms var(--settle);
+}
+
+.admin-pw-toggle:hover,
+.admin-pw-toggle[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.admin-remember-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+  min-height: 36px;
+}
+
+.admin-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.admin-remember-row label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+}
+
+.admin-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+}
+
+.icon-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+}
+
+.icon-btn:hover {
+  border-color: var(--control-line);
+}
+
+.icon-btn.is-danger {
+  color: var(--err-fg);
+}
+
+.status-segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.status-segment button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.status-segment button[aria-pressed="true"] {
+  background: var(--selected);
+  border-color: var(--accent);
+  font-weight: 650;
+}
+
+.admin-scanner-box {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #101114;
+  margin-bottom: 12px;
+  padding: 10px;
+  color: #f5f5f7;
+  text-align: center;
 }
 
 .admin-auth-gate[hidden],
@@ -881,9 +1003,7 @@
   }
 
   .admin-table tbody th {
-    position: sticky;
-    inset-block-start: 0;
-    z-index: 2;
+    position: static;
     background: var(--surface-soft);
     border-radius: 12px;
     padding: 11px 14px;
@@ -997,11 +1117,6 @@
   .admin-row-actions {
     width: 100%;
     justify-content: flex-start;
-    flex-wrap: nowrap;
-    gap: 5px;
-  }
-
-  .admin-table.is-history .admin-row-actions {
     flex-wrap: wrap;
     gap: 6px;
   }
@@ -1016,12 +1131,6 @@
     min-width: 38px;
     min-height: 38px;
     flex: 0 0 auto;
-  }
-
-  @media (max-width: 359px) {
-    .admin-row-actions {
-      flex-wrap: wrap;
-    }
   }
 }
 
@@ -1087,10 +1196,23 @@
   padding-top: 10px;
 }
 
-@media (max-width: 400px) {
+@media (max-width: 520px) {
   .admin-ql-form .admin-inline-field,
   .admin-modal-form .admin-inline-field {
-    grid-template-columns: 92px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .admin-modal-form .admin-inline-field.is-top > label {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+  .admin-search-input,
+  .admin-sort-select,
+  .admin-status-select {
+    font-size: 16px;
   }
 }
 
@@ -1583,4 +1705,120 @@ progress.status-meter::-moz-progress-bar {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--ink);
+}
+
+/* Admin Semantic Layout & Dialog Utilities (Zero Inline Styles) */
+.admin-header-link {
+  padding: 0 10px;
+}
+
+.admin-login-back {
+  margin-bottom: 20px;
+}
+
+.admin-login-eyebrow {
+  margin-bottom: 10px;
+}
+
+.admin-login-title {
+  font-size: 30px;
+  margin-bottom: 8px;
+}
+
+.admin-login-sub {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+.admin-login-submit {
+  margin-top: 8px;
+}
+
+.admin-topbar-eyebrow {
+  margin-bottom: 6px;
+}
+
+.admin-toolbar-heading {
+  margin: 0;
+  font-size: 20px;
+}
+
+.admin-empty-box {
+  padding: 44px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.admin-empty-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.admin-empty-sub {
+  margin: 0;
+  font-size: 14px;
+}
+
+.admin-field-tight {
+  margin-bottom: 4px;
+}
+
+.admin-qr-status-msg {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.admin-manual-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.admin-full-btn {
+  width: 100%;
+}
+
+.admin-copy-row {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-copy-inline-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
+.admin-zero-mb {
+  margin-bottom: 0;
+}
+
+.admin-dialog-actions-compact {
+  margin-top: 8px;
+}
+
+.admin-dialog-actions {
+  margin-top: 16px;
+}
+
+.admin-dialog-btn-flush {
+  margin-top: 0;
+}
+
+.admin-dialog-note {
+  margin-bottom: 14px;
+}
+
+.admin-dialog-copy {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.lpa-primary-btn.is-danger {
+  background: var(--err-fg);
+  color: #ffffff;
 }

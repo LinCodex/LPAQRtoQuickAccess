@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
     if (!userData) {
       if (cleanUsername === 'admin' && bootstrapPassword && timingSafeCompare(password, bootstrapPassword)) {
-        const hashedPassword = bcrypt.hashSync(bootstrapPassword, 10);
+        const hashedPassword = await bcrypt.hash(bootstrapPassword, 10);
         await redis.set('user:admin', JSON.stringify({
           id: 'admin',
           username: 'admin',
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     }
 
     const user = JSON.parse(userData);
-    let passwordMatch = bcrypt.compareSync(password, user.password);
+    let passwordMatch = await bcrypt.compare(password, user.password);
 
     if (
       !passwordMatch &&
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
       bootstrapPassword &&
       timingSafeCompare(password, bootstrapPassword)
     ) {
-      const hashedPassword = bcrypt.hashSync(bootstrapPassword, 10);
+      const hashedPassword = await bcrypt.hash(bootstrapPassword, 10);
       await redis.set('user:admin', JSON.stringify({
         ...user,
         password: hashedPassword,

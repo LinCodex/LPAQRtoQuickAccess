@@ -41,14 +41,14 @@
           <p class="esim-desc">Loading short link…</p>
         </div>
 
-        <div id="shortlink-redirect" hidden style="width:100%;">
-          <p class="esim-desc" style="margin:0 auto 16px;">Redirecting to eSIM setup…</p>
+        <div id="shortlink-redirect" class="shortlink-panel" hidden>
+          <p class="esim-desc shortlink-desc">Redirecting to eSIM setup…</p>
           <a id="manual-link" href="#" class="lpa-primary-btn">Tap here if not redirected</a>
         </div>
 
-        <div id="shortlink-error" hidden style="width:100%;">
-          <div class="lpa-alert is-error" role="alert" style="margin-top:0;">
-            <strong style="display:block;margin-bottom:4px;">Link Not Found</strong>
+        <div id="shortlink-error" class="shortlink-panel" hidden>
+          <div class="lpa-alert is-error shortlink-alert" role="alert">
+            <strong class="shortlink-alert-title">Link Not Found</strong>
             <span id="shortlink-error-message">This link may have expired or is invalid.</span>
           </div>
           <a href="/" class="lpa-secondary-btn">Back to EZRefill</a>
@@ -60,6 +60,7 @@
       <a class="brand" href="/">EZRefill<span class="brand-period">.</span><span lang="zh">椰子通讯</span></a>
       <span>© <span data-year>2026</span> EZRefill</span>
       <div class="footer-links">
+        <a href="/lpascan">eSIM Scanner</a>
         <a href="/privacy/">Privacy</a>
         <a href="/store-information/">Store information</a>
       </div>

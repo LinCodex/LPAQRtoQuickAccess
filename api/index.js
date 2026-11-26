@@ -1,4 +1,5 @@
 // Single Vercel Serverless Function Router (1 of 12 Hobby limit)
+import { applyCors } from './_lib/auth.js';
 import activationById from './_handlers/activation-by-id.js';
 import adminActivations from './_handlers/admin-activations.js';
 import adminActivationById from './_handlers/admin-activation-by-id.js';
@@ -37,7 +38,23 @@ function safeDecode(segment) {
   }
 }
 
+function healthHandler(req, res) {
+  applyCors(req, res, 'GET,OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  return res.status(200).json({
+    ok: true,
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+}
+
 const EXACT_ROUTES = {
+  health: healthHandler,
   'auth/login': authLogin,
   'auth/logout': authLogout,
   'auth/verify': authVerify,
@@ -58,6 +75,7 @@ const DYNAMIC_ROUTES = [
 ];
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   req.query = req.query || {};
 
   if (typeof req.body === 'string' && req.body.trim()) {
@@ -69,22 +87,29 @@ export default async function handler(req, res) {
   }
 
   const subPath = resolveSubPath(req);
-  const exactHandler = EXACT_ROUTES[subPath];
-  if (exactHandler) {
-    return exactHandler(req, res);
-  }
+  try {
+    const exactHandler = EXACT_ROUTES[subPath];
+    if (exactHandler) {
+      return await exactHandler(req, res);
+    }
 
-  for (const route of DYNAMIC_ROUTES) {
-    const match = subPath.match(route.pattern);
-    if (match) {
-      const decodedId = safeDecode(match[1]);
-      if (decodedId === null) {
-        return res.status(400).json({ error: 'Malformed path parameter' });
+    for (const route of DYNAMIC_ROUTES) {
+      const match = subPath.match(route.pattern);
+      if (match) {
+        const decodedId = safeDecode(match[1]);
+        if (decodedId === null) {
+          return res.status(400).json({ error: 'Malformed path parameter' });
+        }
+        req.query.id = decodedId;
+        return await route.handler(req, res);
       }
-      req.query.id = decodedId;
-      return route.handler(req, res);
+    }
+
+    return res.status(404).json({ error: 'API route not found' });
+  } catch (err) {
+    console.error('Unhandled API error:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
-
-  return res.status(404).json({ error: 'API route not found' });
 }

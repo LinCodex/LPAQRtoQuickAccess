@@ -1,5 +1,5 @@
 // Handler - Get activation status (public)
-import { applyCors, validateId, validateLpaCode } from '../_lib/auth.js';
+import { applyCors, maskPhoneNumber, validateId, validateLpaCode } from '../_lib/auth.js';
 import { getRedisClient, closeRedisClient, isRedisUnavailableError } from '../_lib/redis.js';
 
 export default async function handler(req, res) {
@@ -31,10 +31,7 @@ export default async function handler(req, res) {
     }
 
     const activation = JSON.parse(activationData);
-
-    const maskedPhone = activation.phoneNumber
-      ? activation.phoneNumber.slice(0, -4).replace(/./g, '*') + activation.phoneNumber.slice(-4)
-      : null;
+    const maskedPhone = maskPhoneNumber(activation.phoneNumber);
 
     let activationUrl = null;
     if (activation.status === 'active' && activation.lpaCode && validateLpaCode(activation.lpaCode)) {

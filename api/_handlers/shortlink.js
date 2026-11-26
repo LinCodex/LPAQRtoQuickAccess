@@ -1,6 +1,6 @@
 // Handler - Create short link
 import crypto from 'node:crypto';
-import { applyCors, validateLpaCode, getPublicBaseUrl } from '../_lib/auth.js';
+import { applyCors, validateLpaCode, getPublicBaseUrl, getClientIp, checkRateLimit } from '../_lib/auth.js';
 import {
   getRedisConfig,
   getRedisClient,
@@ -21,7 +21,7 @@ function generateShortId() {
 }
 
 export default async function handler(req, res) {
-  applyCors(req, res, 'GET,POST,OPTIONS');
+  applyCors(req, res, 'POST,OPTIONS');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -43,6 +43,13 @@ export default async function handler(req, res) {
   try {
     const { provider } = getRedisConfig();
     redis = await getRedisClient();
+
+    const ip = getClientIp(req);
+    const rate = await checkRateLimit(redis, `ratelimit:shortlink:${ip}`, 30, 900);
+    if (!rate.allowed) {
+      await closeRedisClient(redis);
+      return res.status(429).json({ error: 'Too many short link requests. Please try again shortly.' });
+    }
 
     let shortId = generateShortId();
     let attempts = 0;

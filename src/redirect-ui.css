@@ -1,4 +1,37 @@
 /* Fresh Glanceable Mobile Activation UI & True-Geometry iPhone 18 Pro Walkthrough (/redirect) */
+:root {
+  --esim-cta-bg-light: #b74d20;
+  --esim-cta-bg-dark: #ff9a66;
+  --esim-cta-fg-light: #ffffff;
+  --esim-cta-fg-dark: #251005;
+  --esim-cta-chip-light: rgb(255 255 255 / 0.2);
+  --esim-cta-chip-dark: rgb(37 16 5 / 0.14);
+  --esim-cta-shadow-light: 0 8px 20px -4px rgb(183 77 32 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.24);
+  --esim-cta-shadow-dark: 0 8px 20px -4px rgb(0 0 0 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.32);
+
+  --esim-cta-bg: var(--esim-cta-bg-light);
+  --esim-cta-fg: var(--esim-cta-fg-light);
+  --esim-cta-chip-bg: var(--esim-cta-chip-light);
+  --esim-cta-shadow: var(--esim-cta-shadow-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --esim-cta-bg: var(--esim-cta-bg-dark);
+    --esim-cta-fg: var(--esim-cta-fg-dark);
+    --esim-cta-chip-bg: var(--esim-cta-chip-dark);
+    --esim-cta-shadow: var(--esim-cta-shadow-dark);
+  }
+}
+
+@supports (color: light-dark(white, black)) {
+  :root {
+    --esim-cta-bg: light-dark(var(--esim-cta-bg-light), var(--esim-cta-bg-dark));
+    --esim-cta-fg: light-dark(var(--esim-cta-fg-light), var(--esim-cta-fg-dark));
+    --esim-cta-chip-bg: light-dark(var(--esim-cta-chip-light), var(--esim-cta-chip-dark));
+  }
+}
+
 .esim-shell {
   max-width: 520px;
   width: 100%;
@@ -12,39 +45,13 @@
   }
 }
 
-.esim-wechat-banner {
-  margin: 0 0 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: var(--warn-bg);
-  color: var(--warn-fg);
-  border: 1px solid var(--warn-line);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.esim-wechat-banner svg {
-  flex-shrink: 0;
-}
-
-.esim-wechat-banner p {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
 /* Unified Top Hero + Action Card */
 .esim-top-card {
   position: relative;
   padding: 16px;
   margin-bottom: 12px;
   border-radius: 20px;
-  background:
-    radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--accent) 11%, transparent) 0%, transparent 70%),
-    var(--surface);
+  background: var(--surface);
 }
 
 .esim-top-bar {
@@ -206,23 +213,11 @@
   min-inline-size: var(--target-size);
 }
 
-/* Clean Prominent Primary CTA (no finger overlay) */
+/* Clean Prominent Primary CTA */
 .esim-cta-wrap {
   position: relative;
   width: 100%;
   z-index: 0;
-}
-
-.esim-cta-wrap::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: 18px;
-  border: 2px solid color-mix(in oklab, var(--accent) 55%, transparent);
-  opacity: 0;
-  scale: 0.985;
-  pointer-events: none;
-  z-index: -1;
 }
 
 .esim-hero-cta {
@@ -234,40 +229,29 @@
   text-align: center;
   gap: 10px;
   width: 100%;
-  min-block-size: 62px;
+  min-block-size: 58px;
   padding: 14px 20px;
   border-radius: 16px;
-  background: linear-gradient(180deg, #df3c1e 0%, #b82910 100%);
-  color: #ffffff;
+  background: var(--esim-cta-bg);
+  color: var(--esim-cta-fg);
   text-decoration: none;
   cursor: pointer;
-  translate: 0px;
-  rotate: 0deg;
   scale: 1;
-  box-shadow: 0 8px 20px rgb(184 41 16 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.24);
+  box-shadow: var(--esim-cta-shadow);
   transition: filter 160ms var(--settle), box-shadow 180ms var(--settle), scale 120ms var(--settle);
 }
 
 .esim-cta-label {
   position: relative;
   z-index: 1;
-  font-size: clamp(1.15rem, 1.02rem + 0.7vw, 1.35rem);
+  font-size: clamp(1.1rem, 1rem + 0.6vw, 1.28rem);
   font-weight: 700;
   letter-spacing: -0.015em;
   line-height: 1.25;
 }
 
-@media (prefers-color-scheme: dark) {
-  .esim-hero-cta {
-    background: linear-gradient(180deg, #ff9d6b 0%, #ed7a42 100%);
-    color: #230d03;
-    box-shadow: 0 8px 20px rgb(0 0 0 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.35);
-  }
-}
-
 .esim-hero-cta:not([aria-disabled="true"]):hover {
-  filter: brightness(1.04);
-  box-shadow: 0 12px 24px rgb(184 41 16 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.3);
+  filter: brightness(1.05);
 }
 
 .esim-hero-cta:not([aria-disabled="true"]):active {
@@ -288,13 +272,7 @@
 }
 
 .esim-cta-shine {
-  position: absolute;
-  inset: 0;
-  width: 42%;
-  background: linear-gradient(105deg, transparent 10%, rgb(255 255 255 / 0.25) 50%, transparent 90%);
-  transform: skewX(-18deg);
-  translate: -180% 0;
-  pointer-events: none;
+  display: none;
 }
 
 .esim-cta-icon {
@@ -303,17 +281,10 @@
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  background: rgb(255 255 255 / 0.2);
+  background: var(--esim-cta-chip-bg);
   display: grid;
   place-items: center;
   flex-shrink: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .esim-hero-cta:not([aria-disabled="true"]) .esim-cta-icon,
-  .esim-hero-cta:not([aria-disabled="true"]) .esim-cta-arrow {
-    background: rgb(35 13 3 / 0.14);
-  }
 }
 
 .esim-hero-cta[aria-disabled="true"] .esim-cta-icon,
@@ -1016,23 +987,6 @@
 
 /* Motion opted in cleanly via prefers-reduced-motion: no-preference */
 @media (prefers-reduced-motion: no-preference) {
-  #esim-shell[data-state="ready"]:not([data-paused]) .esim-hero-cta:not([aria-disabled="true"]):not(:hover):not(:active):not(:focus-visible) {
-    animation: esimCtaInvite 2.8s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-    animation-timing-function: linear(0, 0.45 8%, 1.08 18%, 0.96 28%, 1.03 38%, 1 48%, 1 100%);
-  }
-
-  #esim-shell[data-state="ready"]:not([data-paused]) .esim-cta-wrap::before {
-    animation: esimCtaHalo 2.8s ease-out infinite;
-  }
-
-  #esim-shell[data-state="ready"]:not([data-paused]) .esim-hero-cta:not([aria-disabled="true"]):not(:hover) .esim-cta-arrow {
-    animation: esimCtaArrowBeckon 2.8s ease-in-out infinite;
-  }
-
-  #esim-shell[data-state="ready"]:not([data-paused]) .esim-cta-shine {
-    animation: esimCtaSheen 2.8s infinite ease-in-out;
-  }
-
   #esim-shell[data-step="1"]:not([data-paused]) .phone-page-1 .ip-btn,
   #esim-shell[data-step="2"]:not([data-paused]) .phone-page-2 .ip-btn,
   #esim-shell[data-step="3"]:not([data-paused]) .phone-page-3 .ip-btn,
@@ -1050,60 +1004,6 @@
   #esim-shell[data-step="3"]:not([data-paused]) .phone-page-3 .ip-ios-spinner {
     animation: esimSpin 1.1s linear infinite;
   }
-}
-
-@keyframes esimCtaInvite {
-  0%, 54%, 100% {
-    scale: 1;
-    translate: 0 0;
-  }
-  14% {
-    scale: 1.018;
-    translate: 0 -2px;
-  }
-  26% {
-    scale: 0.996;
-    translate: 0 0;
-  }
-  38% {
-    scale: 1.012;
-    translate: 0 -1px;
-  }
-}
-
-@keyframes esimCtaHalo {
-  0%, 8% {
-    opacity: 0;
-    scale: 0.985 0.97;
-  }
-  18% {
-    opacity: 0.65;
-    scale: 1.015 1.07;
-  }
-  52%, 100% {
-    opacity: 0;
-    scale: 1.045 1.22;
-  }
-}
-
-@keyframes esimCtaArrowBeckon {
-  0%, 54%, 100% {
-    translate: 0 0;
-  }
-  14% {
-    translate: 4px 0;
-  }
-  26% {
-    translate: 1px 0;
-  }
-  38% {
-    translate: 3px 0;
-  }
-}
-
-@keyframes esimCtaSheen {
-  0%, 10% { translate: -180% 0; }
-  48%, 100% { translate: 280% 0; }
 }
 
 @keyframes esimPhoneBtnPress {

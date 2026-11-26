@@ -766,7 +766,13 @@ export const zh: Record<string, string> = {
   'Marked as activated.': '已标记为已激活。',
   'Marked as not activated.': '已取消已激活标记。',
   'Could not update activation status.': '没能更新激活状态。',
-  'Network error while updating activation status.': '更新激活状态时网络出错。'
+  'Network error while updating activation status.': '更新激活状态时网络出错。',
+  '136-78 Roosevelt Ave, Flushing': '法拉盛 136-78 Roosevelt Ave',
+  'Daily 10 AM – 7 PM ·': '每天 10 AM – 7 PM ·',
+  'Activation progress': '激活进度',
+  'Clear All History?': '确定要清空全部历史吗？',
+  'This will permanently remove all saved eSIM history entries.': '清空后将永久删除所有已保存的 eSIM 历史记录。',
+  'Clear All': '全部清空'
 };
 
 export function translate(value: string): string {
